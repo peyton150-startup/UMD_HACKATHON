@@ -51,6 +51,10 @@ npm install
 npm run dev
 ```
 
+## Demo
+
+See [DEMO.md](DEMO.md) for the 3-minute demo script and pre-demo checklist.
+
 ## License
 
 MIT
