@@ -2,13 +2,15 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["ws"],
-  // Local dev only: forward /api/* to the FastAPI server. On Vercel the top-level
-  // rewrite in vercel.json routes /api/* to the backend service before Next sees it.
+  // The browser always calls same-origin /api/*; Next forwards it to the FastAPI backend.
+  // Same origin means no CORS setup. Dev -> local uvicorn; production -> the backend
+  // Vercel project (override with BACKEND_URL in the frontend project's env vars).
   async rewrites() {
-    if (process.env.NODE_ENV !== "development") return [];
-    return [
-      { source: "/api/:path*", destination: "http://localhost:8000/api/:path*" },
-    ];
+    const backend =
+      process.env.NODE_ENV === "development"
+        ? "http://localhost:8000"
+        : (process.env.BACKEND_URL ?? "https://backend-eight-smoky-28.vercel.app");
+    return [{ source: "/api/:path*", destination: `${backend}/api/:path*` }];
   },
   turbopack: {
     resolveAlias: {

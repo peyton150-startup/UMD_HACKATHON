@@ -129,5 +129,8 @@ def build_provider_from_env() -> FallbackProvider:
         raise ProviderError(f"unknown provider(s) in PROVIDER_ORDER: {unknown}")
     providers = [p for n in order if (p := _BUILDERS[n]()) is not None]
     if not providers:
-        raise ProviderError("set GEMINI_API_KEY and/or NVIDIA_API_KEY in .env")
+        raise ProviderError(
+            "no model API key: set GEMINI_API_KEY and/or NVIDIA_API_KEY "
+            "(.env locally, project Environment Variables on Vercel, then redeploy)"
+        )
     return FallbackProvider(providers)
