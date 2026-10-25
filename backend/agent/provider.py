@@ -28,7 +28,7 @@ class OpenAICompatibleProvider:
     base_url: str
     api_key: str
     model: str
-    timeout_s: float = 45.0
+    timeout_s: float = 20.0  # fail over to the next provider quickly
 
     def complete(self, messages: list[dict]) -> str:
         try:

@@ -2,55 +2,41 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-:root {
-  --background: #ffffff;
-  --foreground: #0a0a0a;
-  --primary: #171717;
-  --primary-foreground: #fafafa;
-  --muted: #737373;
-  --muted-foreground: #737373;
-  --card: #ffffff;
-  --card-foreground: #0a0a0a;
-  --popover: #ffffff;
-  --popover-foreground: #0a0a0a;
-  --border: #e5e5e5;
-  --border-low: #f5f5f5;
-  --input: #e5e5e5;
-  --accent: #f5f5f5;
-  --accent-foreground: #171717;
-  --cream: #f5f5f5;
-  --destructive: #dc2626;
-  --destructive-foreground: #dc2626;
-  --ring: #a3a3a3;
-  --radius: 0.625rem;
-  --secondary: #f5f5f5;
-  --secondary-foreground: #171717;
-  --font-sans: var(--font-inter), system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
-}
-
+/*
+ * Retro arcade palette (one theme, always dark).
+ * UMD red is the primary action color, UMD gold marks rewards/scores.
+ * Purple + neon green nod to the Hacktoberfest / Solana look.
+ */
+:root,
 .dark {
-  --background: #0a0a0a;
-  --foreground: #fafafa;
-  --primary: #fafafa;
-  --primary-foreground: #171717;
-  --muted: #a3a3a3;
-  --muted-foreground: #737373;
-  --card: #171717;
-  --card-foreground: #fafafa;
-  --popover: #171717;
-  --popover-foreground: #fafafa;
-  --border: #262626;
-  --border-low: rgba(38, 38, 38, 0.5);
-  --input: #262626;
-  --accent: #262626;
-  --accent-foreground: #fafafa;
-  --cream: #262626;
-  --destructive: #f87171;
-  --destructive-foreground: #f87171;
-  --ring: #525252;
-  --secondary: #262626;
-  --secondary-foreground: #fafafa;
+  --background: #0d0a1f;
+  --foreground: #f2ecff;
+  --primary: #e21833; /* UMD red */
+  --primary-foreground: #ffffff;
+  --gold: #ffd200; /* UMD gold */
+  --neon: #3dff9a;
+  --violet: #9b5cff;
+  --muted: #a99cc9;
+  --muted-foreground: #8a7db0;
+  --card: #17122e;
+  --card-foreground: #f2ecff;
+  --popover: #17122e;
+  --popover-foreground: #f2ecff;
+  --border: #4a3d80;
+  --border-low: #2f2658;
+  --input: #2f2658;
+  --accent: #241c45;
+  --accent-foreground: #f2ecff;
+  --cream: #241c45;
+  --destructive: #ff5c7a;
+  --destructive-foreground: #ff5c7a;
+  --ring: #ffd200;
+  --radius: 0px;
+  --secondary: #241c45;
+  --secondary-foreground: #f2ecff;
+  --font-sans: var(--font-vt323), ui-monospace, monospace;
+  --font-mono: var(--font-vt323), ui-monospace, monospace;
+  --font-pixel: var(--font-press-start), ui-monospace, monospace;
 }
 
 @theme inline {
@@ -58,6 +44,9 @@
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-gold: var(--gold);
+  --color-neon: var(--neon);
+  --color-violet: var(--violet);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-card: var(--card);
@@ -77,9 +66,11 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --font-pixel: var(--font-pixel);
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
 }
 
 @layer base {
@@ -87,13 +78,88 @@
     @apply border-border;
   }
 
+  html {
+    font-size: 19px;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-sans);
+    line-height: 1.25;
+  }
+
+  /* square everything off, arcade style */
+  *,
+  *::before,
+  *::after {
+    border-radius: 0 !important;
+  }
+}
+
+@layer components {
+  /* chunky pixel panel: thick border + hard offset shadow */
+  .pixel-box {
+    background: var(--card);
+    border: 3px solid var(--border);
+    box-shadow: 6px 6px 0 0 #000;
+  }
+
+  .pixel-btn {
+    font-family: var(--font-pixel);
+    font-size: 0.6rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 0.9rem 1.1rem;
+    border: 3px solid #000;
+    box-shadow:
+      inset -4px -4px 0 0 rgb(0 0 0 / 0.35),
+      4px 4px 0 0 #000;
+    transition: transform 60ms steps(1);
+    cursor: pointer;
+  }
+  .pixel-btn:active:not(:disabled) {
+    transform: translate(4px, 4px);
+    box-shadow: inset -4px -4px 0 0 rgb(0 0 0 / 0.35);
+  }
+  .pixel-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .pixel-input {
+    width: 100%;
+    background: var(--background);
+    border: 3px solid var(--border-low);
+    padding: 0.35rem 0.6rem;
+    font-size: 1.05rem;
+    outline: none;
+  }
+  .pixel-input:focus {
+    border-color: var(--gold);
+  }
+
+  .font-pixel {
+    font-family: var(--font-pixel);
+  }
+
+  .blink {
+    animation: blink 1s steps(2, start) infinite;
+  }
+}
+
+@keyframes blink {
+  to {
+    visibility: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blink {
+    animation: none;
   }
 }
 
 :focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 3px solid var(--gold);
   outline-offset: 2px;
 }

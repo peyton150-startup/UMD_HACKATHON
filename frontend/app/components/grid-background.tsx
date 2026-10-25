@@ -1,76 +1,36 @@
 "use client";
 
+/** Arcade cabinet backdrop: perspective pixel grid + CRT scanlines. */
 export function GridBackground() {
   return (
     <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true">
-      {/* Ambient glow */}
+      {/* sunset glow: violet with a hint of UMD red at the horizon */}
       <div
-        className="absolute inset-0 transition-opacity duration-500"
+        className="absolute inset-0"
         style={{
-          background: [
-            "radial-gradient(ellipse 30% 28% at 30% 50%, rgba(153,69,255,0.08) 0%, transparent 70%)",
-            "radial-gradient(ellipse 30% 28% at 70% 50%, rgba(20,241,149,0.08) 0%, transparent 70%)",
-          ].join(", "),
+          background:
+            "radial-gradient(ellipse 70% 40% at 50% 100%, rgba(226,24,51,0.18) 0%, transparent 70%), radial-gradient(ellipse 60% 50% at 50% 0%, rgba(155,92,255,0.16) 0%, transparent 70%)",
         }}
       />
-
-      {/* Large grid — purple (left) */}
+      {/* pixel grid floor */}
       <div
-        className="absolute inset-0 opacity-80 dark:opacity-60"
+        className="absolute inset-x-0 bottom-0 h-1/2 opacity-40"
         style={{
-          backgroundImage: `
-            linear-gradient(to right, rgba(153,69,255,0.18) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(153,69,255,0.18) 1px, transparent 1px)
-          `,
-          backgroundSize: "80px 80px",
-          mask: "radial-gradient(ellipse 30% 35% at 30% 50%, black, transparent)",
-          WebkitMask:
-            "radial-gradient(ellipse 30% 35% at 30% 50%, black, transparent)",
+          backgroundImage:
+            "linear-gradient(to right, rgba(155,92,255,0.5) 2px, transparent 2px), linear-gradient(to bottom, rgba(155,92,255,0.5) 2px, transparent 2px)",
+          backgroundSize: "48px 48px",
+          transform: "perspective(400px) rotateX(55deg)",
+          transformOrigin: "bottom",
+          maskImage: "linear-gradient(to top, black, transparent)",
+          WebkitMaskImage: "linear-gradient(to top, black, transparent)",
         }}
       />
-
-      {/* Large grid — green (right) */}
+      {/* CRT scanlines */}
       <div
-        className="absolute inset-0 opacity-80 dark:opacity-60"
+        className="absolute inset-0 opacity-[0.12]"
         style={{
-          backgroundImage: `
-            linear-gradient(to right, rgba(20,241,149,0.18) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(20,241,149,0.18) 1px, transparent 1px)
-          `,
-          backgroundSize: "80px 80px",
-          mask: "radial-gradient(ellipse 30% 35% at 70% 50%, black, transparent)",
-          WebkitMask:
-            "radial-gradient(ellipse 30% 35% at 70% 50%, black, transparent)",
-        }}
-      />
-
-      {/* Small grid — purple (left) */}
-      <div
-        className="absolute inset-0 opacity-80 dark:opacity-60"
-        style={{
-          backgroundImage: `
-            linear-gradient(to right, rgba(153,69,255,0.10) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(153,69,255,0.10) 1px, transparent 1px)
-          `,
-          backgroundSize: "16px 16px",
-          mask: "radial-gradient(ellipse 30% 35% at 30% 50%, black, transparent)",
-          WebkitMask:
-            "radial-gradient(ellipse 30% 35% at 30% 50%, black, transparent)",
-        }}
-      />
-
-      {/* Small grid — green (right) */}
-      <div
-        className="absolute inset-0 opacity-80 dark:opacity-60"
-        style={{
-          backgroundImage: `
-            linear-gradient(to right, rgba(20,241,149,0.10) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(20,241,149,0.10) 1px, transparent 1px)
-          `,
-          backgroundSize: "16px 16px",
-          mask: "radial-gradient(ellipse 30% 35% at 70% 50%, black, transparent)",
-          WebkitMask:
-            "radial-gradient(ellipse 30% 35% at 70% 50%, black, transparent)",
+          backgroundImage:
+            "repeating-linear-gradient(to bottom, #000 0px, #000 1px, transparent 2px, transparent 4px)",
         }}
       />
     </div>
