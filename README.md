@@ -13,11 +13,12 @@ Built at Hacktoberfest Hack Day College Park × GDSC UMD (Oct 25, 2026).
 
 If a repo has no issues with the requested label, the backend falls back to all open issues and says so. GitHub issue lists are cached for 5 minutes.
 
-## Open-source AI
+## AI models
 
-- **Primary model:** NVIDIA Nemotron 3.5 Lightning (open-weight), via NVIDIA's hosted API
-- **Fallback:** Qwen (open-weight), via Groq
-- Both are called through one OpenAI-compatible provider interface (`backend/agent/provider.py`), so swapping models is a config change.
+- **Primary:** Google **Gemini 3.5 Flash** (Gemini API, thinking off, about 4 s)
+- **Backup:** NVIDIA **Nemotron 3.5 Lightning** (open-weight, NVIDIA hosted API, thinking off, about 6 s). Used automatically when Gemini errors or is overloaded.
+- All providers share one OpenAI-compatible interface (`backend/agent/provider.py`). `PROVIDER_ORDER` in `.env` sets the order (default `gemini,nvidia,groq`); providers without a key are skipped.
+- Whatever the model returns is validated with Pydantic and checked against real GitHub issue numbers before it reaches the UI.
 
 ## Stack
 
@@ -26,33 +27,36 @@ If a repo has no issues with the requested label, the backend falls back to all 
 | Backend | Python, FastAPI, Pydantic, httpx, pytest |
 | Frontend | Next.js, Tailwind, `@solana/kit` (from `create-solana-dapp`) |
 | Chain | Solana Devnet |
+| Hosting | Vercel (one project, two services: `frontend` at `/`, `backend` at `/api`) |
 
-## Run it
+## Run it locally
 
-Create a `.env` in the project root, next to this README (never commit it; it's gitignored), with at least one model key:
+Create a `.env` in the project root, next to this README (never commit it; it's gitignored):
 
 ```
-NVIDIA_API_KEY=            # primary
-NVIDIA_MODEL=nvidia/nemotron-3.5-lightning-30b-a3b
-GROQ_API_KEY=              # fallback
-GROQ_MODEL=qwen/qwen3.8-27b
-GITHUB_TOKEN=              # public-repo read; raises rate limit 60 -> 5000/hr
+GEMINI_API_KEY=            # primary
+NVIDIA_API_KEY=            # backup
+GITHUB_TOKEN=              # public-repo read; raises GitHub limits a lot
+# optional: PROVIDER_ORDER=gemini,nvidia   GEMINI_MODEL=gemini-3.5-flash
 ```
 
 ```bash
-
 # backend (http://localhost:8000/docs)
 cd backend
 python -m venv .venv
-.venv/Scripts/python -m pip install -r requirements.txt   # macOS/Linux: .venv/bin/python
+.venv/Scripts/python -m pip install -r requirements-dev.txt   # macOS/Linux: .venv/bin/python
 .venv/Scripts/python -m uvicorn main:app --reload
 .venv/Scripts/python -m pytest
 
-# frontend (http://localhost:3000)
+# frontend (http://localhost:3000); /api/* is proxied to the backend in dev
 cd frontend
 npm install
 npm run dev
 ```
+
+## Deploy (Vercel)
+
+`vercel.json` defines two services in one project. `/api/*` goes to the FastAPI `backend` and everything else goes to the Next.js `frontend`, all on one domain. Set `GEMINI_API_KEY`, `NVIDIA_API_KEY` and `GITHUB_TOKEN` as project environment variables in the Vercel dashboard.
 
 ## Demo
 

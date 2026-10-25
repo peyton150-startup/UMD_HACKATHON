@@ -49,7 +49,9 @@ export type RecommendResult = {
   replayed: boolean;
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+// Same-origin by default: on Vercel /api/* is routed to the backend service;
+// in `next dev`, next.config.ts proxies /api/* to the local uvicorn on :8000.
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "/api";
 const CACHE_PREFIX = "bountybridge:last:";
 // Backend worst case is 2 attempts x provider timeout; don't hang the demo longer than this.
 const REQUEST_TIMEOUT_MS = 90_000;
@@ -110,7 +112,7 @@ export async function fetchRecommendations(
     if (e instanceof DOMException && e.name === "TimeoutError") {
       throw new Error("The model took too long. Try again.");
     }
-    throw new Error(`Backend unreachable at ${API_URL}. Is uvicorn running?`);
+    throw new Error(`Backend unreachable at ${API_URL}. Is the backend running?`);
   }
 
   if (!res.ok) {
@@ -145,7 +147,7 @@ export async function verifyPr(
       signal: AbortSignal.timeout(20_000),
     });
   } catch {
-    throw new Error(`Backend unreachable at ${API_URL}. Is uvicorn running?`);
+    throw new Error(`Backend unreachable at ${API_URL}. Is the backend running?`);
   }
   if (!res.ok) {
     const body = await res.json().catch(() => null);
@@ -174,7 +176,7 @@ export async function discoverRepos(languages: string[]): Promise<DiscoverRespon
       signal: AbortSignal.timeout(20_000),
     });
   } catch {
-    throw new Error(`Backend unreachable at ${API_URL}. Is uvicorn running?`);
+    throw new Error(`Backend unreachable at ${API_URL}. Is the backend running?`);
   }
   if (!res.ok) {
     const body = await res.json().catch(() => null);
