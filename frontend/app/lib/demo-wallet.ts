@@ -69,7 +69,9 @@ export async function registerDemoWallet(): Promise<void> {
     features: ["solana:signMessage", "solana:signTransaction"] as const,
   };
   let connected: (typeof account)[] = [];
-  const listeners = new Set<(props: { accounts: (typeof account)[] }) => void>();
+  const listeners = new Set<
+    (props: { accounts: (typeof account)[] }) => void
+  >();
   const emit = () => listeners.forEach((fn) => fn({ accounts: connected }));
 
   registerWallet({
@@ -98,7 +100,10 @@ export async function registerDemoWallet(): Promise<void> {
       },
       "standard:events": {
         version: "1.0.0",
-        on: (_event: "change", fn: (props: { accounts: (typeof account)[] }) => void) => {
+        on: (
+          _event: "change",
+          fn: (props: { accounts: (typeof account)[] }) => void
+        ) => {
           listeners.add(fn);
           return () => listeners.delete(fn);
         },
@@ -106,7 +111,9 @@ export async function registerDemoWallet(): Promise<void> {
       "solana:signTransaction": {
         version: "1.0.0",
         supportedTransactionVersions: ["legacy", 0],
-        signTransaction: async (...inputs: readonly { transaction: Uint8Array }[]) =>
+        signTransaction: async (
+          ...inputs: readonly { transaction: Uint8Array }[]
+        ) =>
           Promise.all(
             inputs.map(async ({ transaction }) => {
               const signed = await partiallySignTransaction(
@@ -114,7 +121,9 @@ export async function registerDemoWallet(): Promise<void> {
                 getTransactionDecoder().decode(transaction)
               );
               return {
-                signedTransaction: new Uint8Array(getTransactionEncoder().encode(signed)),
+                signedTransaction: new Uint8Array(
+                  getTransactionEncoder().encode(signed)
+                ),
               };
             })
           ),
@@ -125,7 +134,9 @@ export async function registerDemoWallet(): Promise<void> {
           Promise.all(
             inputs.map(async ({ message }) => ({
               signedMessage: message,
-              signature: new Uint8Array(await signBytes(keyPair.privateKey, message)),
+              signature: new Uint8Array(
+                await signBytes(keyPair.privateKey, message)
+              ),
             }))
           ),
       },
