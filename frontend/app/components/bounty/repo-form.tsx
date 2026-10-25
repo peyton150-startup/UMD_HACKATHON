@@ -34,15 +34,15 @@ export function RepoForm({ loading, onSubmit }: Props) {
     .map((l) => l.trim())
     .filter(Boolean);
   const canSubmit = repo.trim() !== "" && langList.length > 0 && !loading;
+  const repoScope = parseRepoScope(repo);
 
   async function handleDiscover() {
     setDiscovering(true);
     setDiscoverError(null);
     try {
       // a full "owner/repo" means the user already chose; search that owner instead
-      const scope = parseRepoScope(repo);
-      setPicks((await discoverRepos(langList, scope)).repos);
-      setPickScope(scope);
+      setPicks((await discoverRepos(langList, repoScope)).repos);
+      setPickScope(repoScope);
     } catch (e) {
       setDiscoverError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -86,7 +86,11 @@ export function RepoForm({ loading, onSubmit }: Props) {
             disabled={discovering || langList.length === 0}
             className="pixel-btn shrink-0 bg-gold text-black"
           >
-            {discovering ? "Scanning..." : "★ Find repos for me"}
+            {discovering
+              ? "Scanning..."
+              : repoScope
+                ? `★ Find ${repoScope.owner} repos`
+                : "★ Find repos for me"}
           </button>
         </div>
 
