@@ -20,7 +20,7 @@ Built in one day at **Hacktoberfest Hack Day College Park × GDSC UMD** (October
 
 - [The problem](#the-problem)
 - [What it does: the four levels](#what-it-does-the-four-levels)
-- [Built, not deployed yet](#built-not-deployed-yet)
+- [Contributor tools](#contributor-tools)
 - [Tech stack](#tech-stack)
 - [The trust model](#the-trust-model)
 - [Architecture](#architecture)
@@ -58,7 +58,7 @@ The UI is a retro arcade game in four "levels". Each level stays locked until th
 - Type a repo as `owner/name` or a full GitHub URL, or click **★ Find repos for me**.
 - **Find repos for me** runs one GitHub search for **active `hacktoberfest` repos in your languages with at least 3 open good first issues**, pushed in the last 30 days, with 50–20,000 stars. You get up to 6 clickable picks with stars, language and description.
 - **Owner search:** type an owner in the repo box (`microsoft`, `microsoft/`, or `microsoft/auto`) and the button becomes **★ Find microsoft repos**. It searches that owner's repos (orgs included), optionally filtered by name. The Hacktoberfest-topic and star filters are dropped here, because big orgs rarely tag repos.
-- **Your profile:** languages, **experience** (Beginner / Intermediate / Advanced) and **hours available** (1–20 slider).
+- **Your profile:** languages, **experience** (Beginner / Intermediate / Advanced) and **hours available** (1–20 slider), and **quests to find** (3–9 slider, default 3). The backend fetches `max(10, 2 × count)` issues so the model has room to choose, and if the model returns too many it keeps the best ones by `fit_score`.
 - **Experience changes which issues are fetched**, not just how they're ranked:
 
   | Experience | Issue labels fetched by default |
@@ -78,7 +78,7 @@ Less common languages (Scala, Dart, Elixir, Haskell, Lua and so on) also work; t
 
 ### Level 2: Pick a quest
 - While the model works, an arcade **LOADING LEVEL** screen shows an animated pixel bar and rotating tips that explain how the system works.
-- You get **3 quests**. Each card shows:
+- You get **3–9 quests**, as many as you chose in Level 1. Each card shows:
   - the issue number and title (linked to GitHub),
   - a **✓ verified on GitHub** badge,
   - a 10-segment **FIT** bar with a 0–100 score,
@@ -109,16 +109,7 @@ Less common languages (Scala, Dart, Elixir, Haskell, Lua and so on) also work; t
 
 ---
 
-## Built, not deployed yet
-
-> These features are **written but not yet committed or deployed**, so they aren't on the live site. They'll appear after the next push to `main`.
-
-### Quest count slider
-- A **"Quests to find"** slider (3–9, default 3) under *Hours available*.
-- The backend's `RecommendRequest` takes `count` (3–9, default 3) and fetches `max(10, 2 × count)` issues, so the model has room to choose. If the model returns more than `count`, the backend keeps the best `count` by `fit_score`.
-- Until this ships, the live app always returns **3** recommendations.
-
-### Contributor tools
+## Contributor tools
 
 - Save up to 20 quests in this browser and resume an accepted quest after refresh. Saved recommendations are marked historical; wallet approval and payment details are never restored.
 - Track contribution steps with a persistent checklist, scoped to the repository, issue and exact step text.
@@ -232,7 +223,7 @@ The system prompt requires JSON only, in this shape:
   "steps": [""], "files_to_look_at": [""]}]}
 ```
 Its other rules:
-- **exactly 3** different recommendations, best first (3–9 once the [quest count slider](#quest-count-slider) ships),
+- **exactly `count`** different recommendations (3–9, from the slider), best first,
 - use the full 0–100 range for `fit_score`,
 - **match difficulty to experience and hours**:
   - beginner → small, well-scoped work (docs, tests, typing, a contained bug), never architecture,
