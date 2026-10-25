@@ -6,7 +6,7 @@ you can switch models without touching code.
 """
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Protocol
 
 import httpx
@@ -28,7 +28,8 @@ class OpenAICompatibleProvider:
     base_url: str
     api_key: str
     model: str
-    timeout_s: float = 20.0  # fail over to the next provider quickly
+    timeout_s: float = 30.0  # fail over to the next provider reasonably quickly
+    extra_body: dict = field(default_factory=dict)  # provider-specific request options
 
     def complete(self, messages: list[dict]) -> str:
         try:
@@ -40,6 +41,7 @@ class OpenAICompatibleProvider:
                     "messages": messages,
                     "temperature": 0.2,
                     "response_format": {"type": "json_object"},
+                    **self.extra_body,
                 },
                 timeout=self.timeout_s,
             )
@@ -80,7 +82,10 @@ def build_provider_from_env() -> FallbackProvider:
                 name="nvidia",
                 base_url="https://integrate.api.nvidia.com/v1",
                 api_key=key,
-                model=os.getenv("NVIDIA_MODEL", "nvidia/nemotron-3.5-lightning"),
+                model=os.getenv("NVIDIA_MODEL", "nvidia/nemotron-3.5-lightning-30b-a3b"),
+                # Lightning "thinks" by default: ~30s and ~3k hidden tokens per call.
+                # Off: ~6s with the same valid JSON. We validate the output in Python anyway.
+                extra_body={"chat_template_kwargs": {"enable_thinking": False}},
             )
         )
     if key := os.getenv("GROQ_API_KEY"):

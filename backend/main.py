@@ -1,8 +1,11 @@
 """FastAPI entry point. Run from backend/: uvicorn main:app --reload"""
 
+from pathlib import Path
+
 from dotenv import load_dotenv
 
-load_dotenv()  # read ../.env or backend/.env before building providers
+# keys live in the project-root .env (UMD_HACKATHON/.env), one level above backend/
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 from fastapi import FastAPI, HTTPException  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402

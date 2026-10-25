@@ -29,11 +29,11 @@ If a repo has no issues with the requested label, the backend falls back to all 
 
 ## Run it
 
-Create a `.env` in `backend/` (never commit it) with at least one model key:
+Create a `.env` in the project root, next to this README (never commit it; it's gitignored), with at least one model key:
 
 ```
 NVIDIA_API_KEY=            # primary
-NVIDIA_MODEL=nvidia/nemotron-3.5-lightning
+NVIDIA_MODEL=nvidia/nemotron-3.5-lightning-30b-a3b
 GROQ_API_KEY=              # fallback
 GROQ_MODEL=qwen/qwen3.8-27b
 GITHUB_TOKEN=              # public-repo read; raises rate limit 60 -> 5000/hr

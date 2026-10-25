@@ -27,7 +27,8 @@ Only recommend issues from the list you are given, by their exact number.
 Reply with JSON only, in this shape:
 {"recommendations": [{"issue_number": int, "fit_score": 0-100,
   "rationale": str, "steps": [str, ...], "files_to_look_at": [str, ...]}]}
-Return 1 to 3 recommendations, best fit first."""
+Return exactly 3 different recommendations (fewer only if fewer issues are listed), best fit first.
+Use the full 0-100 range for fit_score so the ranking is meaningful."""
 
 
 class NoIssuesError(RuntimeError):
@@ -40,7 +41,7 @@ class RecommendationError(RuntimeError):
 
 def build_user_prompt(req: RecommendRequest, issues: list[Issue]) -> str:
     issue_lines = "\n\n".join(
-        f"#{i.number}: {i.title}\nlabels: {', '.join(i.labels)}\n{i.body[:600]}" for i in issues
+        f"#{i.number}: {i.title}\nlabels: {', '.join(i.labels)}\n{i.body[:400]}" for i in issues
     )
     p = req.profile
     return (

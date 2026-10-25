@@ -44,7 +44,7 @@ class GitHubService:
         self.clock = clock
         self._cache: dict[tuple, tuple[float, list[Issue]]] = {}
 
-    def list_issues(self, repo: str, labels: list[str], limit: int = 15) -> list[Issue]:
+    def list_issues(self, repo: str, labels: list[str], limit: int = 10) -> list[Issue]:
         key = (repo, tuple(labels), limit)
         cached = self._cache.get(key)
         if cached and self.clock() - cached[0] < CACHE_TTL_S:
