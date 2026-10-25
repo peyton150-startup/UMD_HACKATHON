@@ -167,9 +167,34 @@ export type RepoSuggestion = {
 
 export type DiscoverResponse = { query: string; repos: RepoSuggestion[] };
 
-/** Active Hacktoberfest repos in these languages with 3+ open good-first-issues. */
-export async function discoverRepos(languages: string[]): Promise<DiscoverResponse> {
+export type RepoScope = { owner: string; name?: string };
+
+/**
+ * Read an owner (and optional partial repo name) from what's typed in the repo box:
+ * "microsoft", "microsoft/", "microsoft/auto", "https://github.com/microsoft/..." -> scope.
+ */
+export function parseRepoScope(input: string): RepoScope | null {
+  const cleaned = input
+    .trim()
+    .replace(/^https?:\/\/(www\.)?github\.com\//i, "")
+    .replace(/\.git$/, "");
+  if (!cleaned) return null;
+  const [owner, name] = cleaned.split("/").map((part) => part.trim());
+  if (!owner) return null;
+  return name ? { owner, name } : { owner };
+}
+
+/**
+ * Repos in these languages with 3+ open good-first-issues. With a scope, only that
+ * owner's repos (any topic); without one, active Hacktoberfest-tagged repos.
+ */
+export async function discoverRepos(
+  languages: string[],
+  scope: RepoScope | null = null
+): Promise<DiscoverResponse> {
   const params = new URLSearchParams({ languages: languages.join(",") });
+  if (scope?.owner) params.set("owner", scope.owner);
+  if (scope?.name) params.set("name", scope.name);
   let res: Response;
   try {
     res = await fetch(`${API_URL}/discover?${params}`, {

@@ -15,6 +15,8 @@ API = "https://api.github.com"
 CACHE_TTL_S = 300  # closed issues drop out of recommendations within 5 minutes
 DISCOVER_TTL_S = 900  # GitHub search allows only 10-30 requests/min, so cache longer
 _LANG_RE = re.compile(r"^[\w#+.\- ]{1,30}$")
+_OWNER_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$")  # GitHub user/org name rules
+_NAME_HINT_RE = re.compile(r"^[\w.-]{1,100}$")
 _REPO_RE = re.compile(r"^(?:https?://github\.com/)?([\w.-]+)/([\w.-]+?)(?:\.git)?/?$")
 _PR_RE = re.compile(r"^https://github\.com/([\w.-]+)/([\w.-]+)/pull/(\d+)/?$")
 
@@ -76,25 +78,47 @@ class GitHubService:
         self._cache[key] = (self.clock(), issues)
         return issues
 
-    def discover_repos(self, languages: list[str], limit: int = 6) -> DiscoverResponse:
-        """Active Hacktoberfest repos in these languages with 3+ open good-first-issues."""
+    def discover_repos(
+        self,
+        languages: list[str],
+        owner: str | None = None,
+        name_hint: str | None = None,
+        limit: int = 6,
+    ) -> DiscoverResponse:
+        """Active repos in these languages with 3+ open good-first-issues.
+
+        Without an owner: Hacktoberfest-tagged repos with 50-20k stars.
+        With an owner (e.g. "microsoft"): that owner's repos, any topic or size,
+        optionally narrowed to names containing `name_hint`.
+        """
         langs = sorted({lang.strip().lower() for lang in languages if lang.strip()})[:5]
         if not langs or not all(_LANG_RE.match(lang) for lang in langs):
             raise ValueError("give 1-5 language names, e.g. python, typescript")
+        owner = (owner or "").strip() or None
+        name_hint = (name_hint or "").strip() or None
+        if owner and not _OWNER_RE.match(owner):
+            raise ValueError(f"not a valid GitHub owner name: {owner!r}")
+        if name_hint and not _NAME_HINT_RE.match(name_hint):
+            raise ValueError(f"not a valid repo name fragment: {name_hint!r}")
 
-        key = (tuple(langs), limit)
+        key = (tuple(langs), (owner or "").lower(), (name_hint or "").lower(), limit)
         cached = self._discover_cache.get(key)
         if cached and self.clock() - cached[0] < DISCOVER_TTL_S:
             return cached[1]
 
         since = (datetime.now(UTC) - timedelta(days=30)).date().isoformat()
         # repeated language: qualifiers are OR'd by GitHub search
+        if owner:
+            # user: matches orgs too. Big orgs rarely tag repos "hacktoberfest", so drop that
+            # and the star cap; the good-first-issue and activity filters still apply.
+            scope = [f"user:{owner}", *([f"{name_hint} in:name"] if name_hint else [])]
+        else:
+            scope = ["topic:hacktoberfest", "stars:50..20000"]  # skip toy and giant repos
         query = " ".join(
             [
-                "topic:hacktoberfest",
+                *scope,
                 "good-first-issues:>=3",
                 "archived:false",
-                "stars:50..20000",  # skip toy repos and giant ones newcomers get lost in
                 f"pushed:>={since}",
                 *(f'language:"{lang}"' for lang in langs),
             ]

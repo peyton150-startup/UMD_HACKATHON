@@ -3,6 +3,8 @@
 import { useState } from "react";
 import {
   discoverRepos,
+  parseRepoScope,
+  type RepoScope,
   type DeveloperProfile,
   type Experience,
   type RepoSuggestion,
@@ -23,6 +25,7 @@ export function RepoForm({ loading, onSubmit }: Props) {
   const [labels, setLabels] = useState("good first issue");
 
   const [picks, setPicks] = useState<RepoSuggestion[] | null>(null);
+  const [pickScope, setPickScope] = useState<RepoScope | null>(null);
   const [discovering, setDiscovering] = useState(false);
   const [discoverError, setDiscoverError] = useState<string | null>(null);
 
@@ -36,7 +39,10 @@ export function RepoForm({ loading, onSubmit }: Props) {
     setDiscovering(true);
     setDiscoverError(null);
     try {
-      setPicks((await discoverRepos(langList)).repos);
+      // a full "owner/repo" means the user already chose; search that owner instead
+      const scope = parseRepoScope(repo);
+      setPicks((await discoverRepos(langList, scope)).repos);
+      setPickScope(scope);
     } catch (e) {
       setDiscoverError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -93,9 +99,13 @@ export function RepoForm({ loading, onSubmit }: Props) {
         {picks && (
           <div className="mt-3">
             <p className="text-muted">
-              {picks.length > 0
-                ? `Active Hacktoberfest repos in ${langList.join(", ")} with 3+ open good first issues:`
-                : `No matching Hacktoberfest repos for ${langList.join(", ")}. Try another language.`}
+              {pickScope
+                ? picks.length > 0
+                  ? `Active ${pickScope.owner} repos${pickScope.name ? ` matching "${pickScope.name}"` : ""} in ${langList.join(", ")} with 3+ open good first issues:`
+                  : `No active ${pickScope.owner} repos${pickScope.name ? ` matching "${pickScope.name}"` : ""} in ${langList.join(", ")} with 3+ open good first issues. Try another language, or clear the repo box for Hacktoberfest picks.`
+                : picks.length > 0
+                  ? `Active Hacktoberfest repos in ${langList.join(", ")} with 3+ open good first issues:`
+                  : `No matching Hacktoberfest repos for ${langList.join(", ")}. Try another language.`}
             </p>
             <ul className="mt-2 grid gap-2 sm:grid-cols-2">
               {picks.map((p) => {

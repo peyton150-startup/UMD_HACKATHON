@@ -148,3 +148,27 @@ def test_discover_rate_limit_is_a_clear_error():
 
     with pytest.raises(GitHubError, match="rate limit"):
         service(lambda r: httpx.Response(403, json={})).discover_repos(["python"])
+
+
+def test_discover_with_owner_scopes_to_that_owner():
+    seen = []
+
+    def handler(request):
+        seen.append(request.url.params["q"])
+        return httpx.Response(200, json={"items": [REPO_ITEM]})
+
+    gh = service(handler)
+    gh.discover_repos(["python"], owner="microsoft", name_hint="auto")
+    q = seen[0]
+    assert "user:microsoft" in q and "auto in:name" in q
+    assert "topic:hacktoberfest" not in q and "stars:" not in q  # big orgs rarely tag repos
+    assert "good-first-issues:>=3" in q
+
+    gh.discover_repos(["python"])  # no owner: different cache entry, hacktoberfest search
+    assert "topic:hacktoberfest" in seen[1]
+
+
+@pytest.mark.parametrize("owner", ["micro soft", "-bad", "a" * 40, "ms:stars"])
+def test_discover_rejects_bad_owner(owner):
+    with pytest.raises(ValueError):
+        service(lambda r: httpx.Response(200, json={})).discover_repos(["python"], owner=owner)

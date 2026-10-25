@@ -65,10 +65,12 @@ def recommend_endpoint(req: RecommendRequest) -> RecommendResponse:
 
 
 @router.get("/discover", response_model=DiscoverResponse)
-def discover_endpoint(languages: str) -> DiscoverResponse:
-    """Suggest repos for a comma-separated language list, e.g. ?languages=python,go"""
+def discover_endpoint(
+    languages: str, owner: str | None = None, name: str | None = None
+) -> DiscoverResponse:
+    """Suggest repos, e.g. ?languages=python,go or ?languages=python&owner=microsoft&name=auto"""
     try:
-        return github.discover_repos(languages.split(","))
+        return github.discover_repos(languages.split(","), owner=owner, name_hint=name)
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
     except GitHubError as exc:
