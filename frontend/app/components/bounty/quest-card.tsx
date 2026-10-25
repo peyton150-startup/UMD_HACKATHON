@@ -7,11 +7,12 @@ type Props = {
   rank: number;
   selected: boolean;
   onSelect: () => void;
+  onDrop: () => void;
 };
 
 const SEGMENTS = 10;
 
-export function QuestCard({ rec, rank, selected, onSelect }: Props) {
+export function QuestCard({ rec, rank, selected, onSelect, onDrop }: Props) {
   const filled = Math.round((rec.fit_score / 100) * SEGMENTS);
 
   return (
@@ -79,14 +80,19 @@ export function QuestCard({ rec, rank, selected, onSelect }: Props) {
         )}
       </details>
 
-      <button
-        onClick={onSelect}
-        className={`pixel-btn mt-4 ${
-          selected ? "bg-gold text-black" : "bg-violet text-white"
-        }`}
-      >
-        {selected ? "★ Quest selected" : "Accept quest"}
-      </button>
+      {selected ? (
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <span className="font-pixel text-[0.6rem] text-gold">★ QUEST ACCEPTED</span>
+          {/* only local state: nothing is saved or sent on-chain until Pay */}
+          <button onClick={onDrop} className="pixel-btn bg-accent text-foreground">
+            ✕ Drop quest
+          </button>
+        </div>
+      ) : (
+        <button onClick={onSelect} className="pixel-btn mt-4 bg-violet text-white">
+          Accept quest
+        </button>
+      )}
     </article>
   );
 }

@@ -119,6 +119,7 @@ export default function Home() {
                   rank={i + 1}
                   selected={selected === rec.issue.number}
                   onSelect={() => setSelected(rec.issue.number)}
+                  onDrop={() => setSelected(null)}
                 />
               ))}
             </div>
