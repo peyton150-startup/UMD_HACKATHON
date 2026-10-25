@@ -16,17 +16,25 @@ def names(p: FallbackProvider) -> list[str]:
     return [x.name for x in p.providers]
 
 
-def test_default_order_is_gemini_then_nvidia(keys):
-    assert names(build_provider_from_env()) == ["gemini", "nvidia"]
+def test_default_order_is_gemma_gemini_nvidia(keys):
+    assert names(build_provider_from_env()) == ["gemma", "gemini", "nvidia"]
+
+
+def test_gemma_and_gemini_share_the_gemini_key(keys):
+    p = build_provider_from_env()
+    gemma, gemini = p.providers[0], p.providers[1]
+    assert gemma.api_key == gemini.api_key == "g"
+    assert gemma.model.startswith("gemma-4")
+    assert gemma.extra_body == {"reasoning_effort": "minimal"}
 
 
 def test_order_can_be_flipped(keys):
-    keys.setenv("PROVIDER_ORDER", "nvidia,gemini")
-    assert names(build_provider_from_env()) == ["nvidia", "gemini"]
+    keys.setenv("PROVIDER_ORDER", "nvidia,gemma")
+    assert names(build_provider_from_env()) == ["nvidia", "gemma"]
 
 
 def test_missing_key_is_skipped(keys):
-    keys.delenv("GEMINI_API_KEY")
+    keys.delenv("GEMINI_API_KEY")  # removes both gemma and gemini
     assert names(build_provider_from_env()) == ["nvidia"]
 
 

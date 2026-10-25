@@ -15,10 +15,13 @@ If a repo has no issues with the requested label, the backend falls back to all 
 
 ## AI models
 
-- **Primary:** Google **Gemini 3.5 Flash** (Gemini API, thinking off, about 4 s)
-- **Backup:** NVIDIA **Nemotron 3.5 Lightning** (open-weight, NVIDIA hosted API, thinking off, about 6 s). Used automatically when Gemini errors or is overloaded.
-- All providers share one OpenAI-compatible interface (`backend/agent/provider.py`). `PROVIDER_ORDER` in `.env` sets the order (default `gemini,nvidia,groq`); providers without a key are skipped.
-- Whatever the model returns is validated with Pydantic and checked against real GitHub issue numbers before it reaches the UI.
+All three are called through one OpenAI-compatible interface (`backend/agent/provider.py`) and tried in order:
+
+1. **Gemma 4 26B A4B** (Google, **open-weight**). Served by the Gemini API on `GEMINI_API_KEY`, with thinking set to "minimal". About 12–15 s, valid JSON first try.
+2. **Gemini 3.5 Flash** (Google, same key). Thinking off, about 4 s. Used if Gemma errors.
+3. **NVIDIA Nemotron 3.5 Lightning** (**open-weight**, NVIDIA hosted API). Thinking off, about 7 s. Used if Google is down.
+
+`PROVIDER_ORDER` (default `gemma,gemini,nvidia`) changes the order; providers without a key are skipped. `GEMMA_MODEL`, `GEMINI_MODEL` and `NVIDIA_MODEL` override the models. Whatever comes back is validated with Pydantic and checked against real GitHub issue numbers before it reaches the UI.
 
 ## Stack
 
@@ -34,10 +37,10 @@ If a repo has no issues with the requested label, the backend falls back to all 
 Create a `.env` in the project root, next to this README (never commit it; it's gitignored):
 
 ```
-GEMINI_API_KEY=            # primary
-NVIDIA_API_KEY=            # backup
+GEMINI_API_KEY=            # Gemma 4 (primary) + Gemini Flash (backup)
+NVIDIA_API_KEY=            # Nemotron (second backup)
 GITHUB_TOKEN=              # public-repo read; raises GitHub limits a lot
-# optional: PROVIDER_ORDER=gemini,nvidia   GEMINI_MODEL=gemini-3.5-flash
+# optional: PROVIDER_ORDER=gemma,gemini,nvidia
 ```
 
 ```bash

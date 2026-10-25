@@ -50,6 +50,16 @@ def build_user_prompt(req: RecommendRequest, issues: list[Issue]) -> str:
     )
 
 
+def normalize_output(data: object) -> object:
+    """Accept common near-misses: [{"recommendations": [...]}] or a bare list of recs."""
+    if isinstance(data, list):
+        if len(data) == 1 and isinstance(data[0], dict) and "recommendations" in data[0]:
+            return data[0]
+        if all(isinstance(x, dict) and "issue_number" in x for x in data):
+            return {"recommendations": data}
+    return data
+
+
 def check_against_issues(output: ModelOutput, issues: list[Issue]) -> list[RecommendedIssue]:
     """Join model output to real issues. Raises if the model invented a number."""
     by_number = {i.number: i for i in issues}
@@ -88,7 +98,7 @@ def recommend(req: RecommendRequest, github: GitHubService, llm: ChatProvider) -
     for attempt in range(1, MAX_ATTEMPTS + 1):
         raw = llm.complete(messages)
         try:
-            output = ModelOutput.model_validate(json.loads(raw))
+            output = ModelOutput.model_validate(normalize_output(json.loads(raw)))
             recs = check_against_issues(output, issues)
             return RecommendResponse(
                 repo=repo,

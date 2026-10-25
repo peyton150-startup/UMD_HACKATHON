@@ -74,7 +74,24 @@ class FallbackProvider:
         raise ProviderError("all providers failed: " + " | ".join(errors))
 
 
-DEFAULT_ORDER = "gemini,nvidia,groq"
+DEFAULT_ORDER = "gemma,gemini,nvidia,groq"
+GOOGLE_OPENAI_URL = "https://generativelanguage.googleapis.com/v1beta/openai"
+
+
+def _gemma() -> ChatProvider | None:
+    """Google's open-weight Gemma 4, served by the Gemini API on the same key."""
+    key = os.getenv("GEMINI_API_KEY")
+    if not key:
+        return None
+    return OpenAICompatibleProvider(
+        name="gemma",
+        base_url=GOOGLE_OPENAI_URL,
+        api_key=key,
+        model=os.getenv("GEMMA_MODEL", "gemma-4-26b-a4b-it"),
+        # "minimal" is the lowest Gemma accepts ("none"/"low" are rejected).
+        # Default thinking took ~77s with broken JSON; minimal: ~12-14s, valid JSON.
+        extra_body={"reasoning_effort": "minimal"},
+    )
 
 
 def _gemini() -> ChatProvider | None:
@@ -83,7 +100,7 @@ def _gemini() -> ChatProvider | None:
         return None
     return OpenAICompatibleProvider(
         name="gemini",
-        base_url="https://generativelanguage.googleapis.com/v1beta/openai",
+        base_url=GOOGLE_OPENAI_URL,
         api_key=key,
         model=os.getenv("GEMINI_MODEL", "gemini-3.5-flash"),
         # thinking off: ~4s instead of ~14s, same valid JSON
@@ -118,11 +135,11 @@ def _groq() -> ChatProvider | None:
     )
 
 
-_BUILDERS = {"gemini": _gemini, "nvidia": _nvidia, "groq": _groq}
+_BUILDERS = {"gemma": _gemma, "gemini": _gemini, "nvidia": _nvidia, "groq": _groq}
 
 
 def build_provider_from_env() -> FallbackProvider:
-    """Providers in PROVIDER_ORDER (default gemini, then nvidia, then groq); keyless ones are skipped."""
+    """Providers in PROVIDER_ORDER (default gemma, gemini, nvidia, groq); keyless ones are skipped."""
     order = [n.strip().lower() for n in os.getenv("PROVIDER_ORDER", DEFAULT_ORDER).split(",")]
     unknown = [n for n in order if n not in _BUILDERS]
     if unknown:

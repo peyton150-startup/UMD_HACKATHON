@@ -29,7 +29,7 @@
 - Set languages to `python` and click **★ Find repos for me**.
 > "New contributors usually don't know where to start. One GitHub search finds active Hacktoberfest repos in my languages with at least three open good first issues."
 - Click a pick, or type `collective/icalendar`. (`SFTtech/openage`, an open-source Age of Empires II engine, also shows up and fits the arcade theme.) Choose **Beginner** and 4 hours, then click **Insert coin**.
-> "While it loads: the backend pulls the real open `good first issue` issues from GitHub and sends them to NVIDIA's **Nemotron**, an open-weight model, with Qwen on Groq as an automatic fallback."
+> "While it loads: the backend pulls the real open `good first issue` issues from GitHub and sends them to Google's **Gemma 4**, an open-weight model, through the Gemini API. If it fails, Gemini Flash and then NVIDIA's open-weight Nemotron take over automatically."
 
 ### 0:45 Level 2: Pick a quest (45 s)
 - Point to the **✓ verified on GitHub** badge and the line showing *model* and *validated on attempt N*.
@@ -71,6 +71,7 @@
 
 - **Why a blockchain instead of a database?** The payment and the contribution record are the same public, checkable object. Contributors own their record. It works across repos with no central server to trust.
 - **What stops the AI from making things up?** Schema validation, plus cross-checking every issue number against GitHub, plus one retry with the error, then a clean failure. Tested in `backend/tests/test_orchestrator.py`.
+- **Which model?** Gemma 4 26B A4B (open-weight) on the Gemini API, with Gemini Flash and Nemotron as automatic backups. The *model* line under the quests shows which one answered.
 - **Why open-weight?** It can be self-hosted, so maintainers aren't locked into one vendor. The provider is a config switch (`backend/agent/provider.py`).
 - **How do you know the PR was merged?** The `/verify-pr` endpoint asks GitHub's API for the repo, merge status and author. Pay stays disabled until that passes, and editing the link resets the check.
 - **What isn't done yet?** It's Devnet only (mainnet is locked out in the UI). Whether the PR actually fixes the issue is still the maintainer's call; the app flags PRs that don't mention the issue number. Nothing links a wallet to a GitHub account yet. The duplicate-payout check only scans the contributor's last 100 transactions. Escrow is the next step.

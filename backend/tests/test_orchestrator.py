@@ -68,3 +68,16 @@ def test_gives_up_after_two_bad_replies():
 )
 def test_parse_repo(raw):
     assert parse_repo(raw) == "o/r"
+
+
+def test_list_wrapped_reply_is_accepted_without_retry():
+    wrapped = "[" + reply(7) + "]"  # Gemma sometimes wraps the object in a list
+    llm = ScriptedLLM(wrapped)
+    resp = recommend(REQ, FakeGitHub(), llm)
+    assert llm.calls == 1 and resp.recommendations[0].issue.number == 7
+
+
+def test_bare_list_of_recommendations_is_accepted():
+    bare = json.dumps(json.loads(reply(12))["recommendations"])
+    resp = recommend(REQ, FakeGitHub(), ScriptedLLM(bare))
+    assert resp.recommendations[0].issue.number == 12
