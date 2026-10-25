@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { address } from "@solana/kit";
 import { useAppClient } from "../../lib/client-provider";
 import { useCluster } from "../cluster-context";
@@ -12,13 +13,21 @@ type Row = BountyRecord & { signature: string; time: Date | null };
  * High-score table: every BountyBridge payout a wallet has received,
  * read straight from the chain (no database).
  */
-export function Ledger({ initialAddress }: { initialAddress: string }) {
+export function Ledger({
+  initialAddress,
+  autoLoad = false,
+}: {
+  initialAddress: string;
+  /** load immediately (used for shared ?wallet= profile links) */
+  autoLoad?: boolean;
+}) {
   const client = useAppClient();
   const { getExplorerUrl } = useCluster();
   const [wallet, setWallet] = useState(initialAddress);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadedAddress, setLoadedAddress] = useState<string | null>(null);
 
   async function load() {
     setError(null);
@@ -47,10 +56,36 @@ export function Ledger({ initialAddress }: { initialAddress: string }) {
         }
       }
       setRows(parsed);
+      setLoadedAddress(addr);
     } catch {
       setError("Could not load history from the RPC");
     } finally {
       setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!autoLoad) return;
+    // deferred so the effect itself doesn't set state synchronously
+    const t = setTimeout(() => {
+      document
+        .getElementById("high-scores")
+        ?.scrollIntoView({ behavior: "smooth" });
+      void load();
+    }, 0);
+    return () => clearTimeout(t);
+    // run once on mount for a shared link
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function shareProfile() {
+    if (!loadedAddress) return;
+    const url = `${window.location.origin}/?wallet=${loadedAddress}#high-scores`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Profile link copied", { description: url });
+    } catch {
+      toast.message("Copy this profile link", { description: url });
     }
   }
 
@@ -84,9 +119,20 @@ export function Ledger({ initialAddress }: { initialAddress: string }) {
 
       {rows && (
         <>
-          <p className="mt-4 font-pixel text-[0.6rem] text-gold">
-            QUESTS CLEARED: {rows.length}
-          </p>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <p className="font-pixel text-[0.6rem] text-gold">
+              QUESTS CLEARED: {rows.length}
+            </p>
+            {loadedAddress && (
+              <button
+                type="button"
+                onClick={shareProfile}
+                className="pixel-btn bg-accent text-foreground"
+              >
+                🔗 Share profile
+              </button>
+            )}
+          </div>
           {rows.length === 0 ? (
             <p className="mt-2 text-muted">
               No BountyBridge payouts yet. Go clear a quest!

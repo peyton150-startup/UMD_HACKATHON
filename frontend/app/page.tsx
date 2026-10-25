@@ -1,29 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { RepoForm } from "./components/bounty/repo-form";
 import { QuestCard } from "./components/bounty/quest-card";
 import { PayoutPanel } from "./components/bounty/payout-panel";
 import { Ledger } from "./components/bounty/ledger";
+import { LoadingScreen } from "./components/bounty/loading-screen";
 import {
   fetchRecommendations,
   type DeveloperProfile,
   type RecommendResult,
 } from "./lib/api";
 
+// ?wallet=<address> opens straight to that wallet's on-chain high scores
+const noSubscribe = () => () => {};
+function useWalletParam(): string {
+  return useSyncExternalStore(
+    noSubscribe,
+    () => new URLSearchParams(window.location.search).get("wallet") ?? "",
+    () => ""
+  );
+}
+
 function Level({
   n,
   title,
   children,
   locked,
+  id,
 }: {
   n: number;
   title: string;
   children: React.ReactNode;
   locked?: boolean;
+  id?: string;
 }) {
   return (
-    <section className={`mt-10 ${locked ? "opacity-40" : ""}`}>
+    <section
+      id={id}
+      className={`mt-10 scroll-mt-20 ${locked ? "opacity-40" : ""}`}
+    >
       <h2 className="mb-4 font-pixel text-[0.7rem] leading-relaxed sm:text-xs">
         <span className="text-primary">LEVEL {n}</span>
         <span className="text-muted"> · </span>
@@ -46,6 +62,8 @@ export default function Home() {
   const [result, setResult] = useState<RecommendResult | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
   const [lastContributor, setLastContributor] = useState("");
+  const [searchedRepo, setSearchedRepo] = useState("");
+  const walletParam = useWalletParam();
 
   async function handleSearch(
     repo: string,
@@ -53,6 +71,7 @@ export default function Home() {
     labels: string[]
   ) {
     setLoading(true);
+    setSearchedRepo(repo);
     setError(null);
     setResult(null);
     setSelected(null);
@@ -99,8 +118,9 @@ export default function Home() {
         </div>
       </Level>
 
-      <Level n={2} title="PICK A QUEST" locked={!data}>
-        {data && (
+      <Level n={2} title="PICK A QUEST" locked={!data && !loading}>
+        {loading && <LoadingScreen repo={searchedRepo} />}
+        {!loading && data && (
           <>
             <p className="mb-4 text-muted">
               {data.recommendations.length} quests from{" "}
@@ -154,9 +174,14 @@ export default function Home() {
         )}
       </Level>
 
-      <Level n={4} title="HIGH SCORES (ON-CHAIN)">
-        {/* key remounts the ledger with the newly paid contributor prefilled */}
-        <Ledger key={lastContributor} initialAddress={lastContributor} />
+      <Level n={4} title="HIGH SCORES (ON-CHAIN)" id="high-scores">
+        {/* key remounts the ledger with the newly paid contributor prefilled;
+            a ?wallet= link loads that wallet's scores right away */}
+        <Ledger
+          key={lastContributor || walletParam}
+          initialAddress={lastContributor || walletParam}
+          autoLoad={!lastContributor && walletParam !== ""}
+        />
       </Level>
     </main>
   );
