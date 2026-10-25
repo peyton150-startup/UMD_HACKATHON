@@ -215,8 +215,13 @@ export function RepoForm({ loading, onSubmit }: Props) {
             </button>
           ))}
         </div>
+        {questCount > 5 && (
+          <p className="mt-2 text-muted">
+            More quests take the AI longer to pick.
+          </p>
+        )}
       </fieldset>
-      <div className="grid gap-4">
+      <div className="grid content-start gap-1 self-start">
         <label>
           <span className="text-muted">Hours available: {hours}</span>
           <input
@@ -225,7 +230,7 @@ export function RepoForm({ loading, onSubmit }: Props) {
             max={20}
             value={hours}
             onChange={(e) => setHours(Number(e.target.value))}
-            className="mt-3 w-full accent-[var(--gold)]"
+            className="mt-1 block w-full accent-[var(--gold)]"
           />
         </label>
         <label>
@@ -236,13 +241,8 @@ export function RepoForm({ loading, onSubmit }: Props) {
             max={MAX_QUESTS}
             value={questCount}
             onChange={(e) => setQuestCount(Number(e.target.value))}
-            className="mt-3 w-full accent-[var(--gold)]"
+            className="mt-1 block w-full accent-[var(--gold)]"
           />
-          {questCount > 5 && (
-            <span className="mt-1 block text-muted">
-              More quests take the AI longer to pick.
-            </span>
-          )}
         </label>
       </div>
       <div className="sm:col-span-2">
