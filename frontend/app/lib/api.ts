@@ -112,7 +112,9 @@ export async function fetchRecommendations(
     if (e instanceof DOMException && e.name === "TimeoutError") {
       throw new Error("The model took too long. Try again.");
     }
-    throw new Error(`Backend unreachable at ${API_URL}. Is the backend running?`);
+    throw new Error(
+      `Backend unreachable at ${API_URL}. Is the backend running?`
+    );
   }
 
   if (!res.ok) {
@@ -143,15 +145,25 @@ export async function verifyPr(
     res = await fetch(`${API_URL}/verify-pr`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ repo, issue_number: issueNumber, pr_url: prUrl.trim() }),
+      body: JSON.stringify({
+        repo,
+        issue_number: issueNumber,
+        pr_url: prUrl.trim(),
+      }),
       signal: AbortSignal.timeout(20_000),
     });
   } catch {
-    throw new Error(`Backend unreachable at ${API_URL}. Is the backend running?`);
+    throw new Error(
+      `Backend unreachable at ${API_URL}. Is the backend running?`
+    );
   }
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new Error(typeof body?.detail === "string" ? body.detail : `Backend error ${res.status}`);
+    throw new Error(
+      typeof body?.detail === "string"
+        ? body.detail
+        : `Backend error ${res.status}`
+    );
   }
   return (await res.json()) as PrVerification;
 }
@@ -201,11 +213,17 @@ export async function discoverRepos(
       signal: AbortSignal.timeout(20_000),
     });
   } catch {
-    throw new Error(`Backend unreachable at ${API_URL}. Is the backend running?`);
+    throw new Error(
+      `Backend unreachable at ${API_URL}. Is the backend running?`
+    );
   }
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new Error(typeof body?.detail === "string" ? body.detail : `Backend error ${res.status}`);
+    throw new Error(
+      typeof body?.detail === "string"
+        ? body.detail
+        : `Backend error ${res.status}`
+    );
   }
   return (await res.json()) as DiscoverResponse;
 }

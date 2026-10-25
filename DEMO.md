@@ -8,8 +8,8 @@
 
 ## Before judging (do this at least 30 minutes ahead)
 
-- [ ] **Keys:** `backend/.env` has `NVIDIA_API_KEY` (and ideally `GROQ_API_KEY`) plus `GITHUB_TOKEN`
-- [ ] **Servers:** backend running (`cd backend` then `.venv/Scripts/python -m uvicorn main:app`) and frontend running (`cd frontend` then `npm run dev`)
+- [ ] **Keys:** the project-root `.env` (next to the README) has `GEMINI_API_KEY` and `GITHUB_TOKEN`, plus `NVIDIA_API_KEY` as a backup (`GROQ_API_KEY` optional)
+- [ ] **Servers:** backend running (`cd backend` then `.venv/Scripts/python -m uvicorn main:app --reload`) and frontend running (`cd frontend` then `npm run dev`). Check <http://localhost:8000/docs> loads.
 - [ ] **Phantom on Devnet:** Settings → Developer Settings → turn on Testnet Mode → choose Solana **Devnet**
 - [ ] **Two accounts in Phantom:** rename Account 1 to **Maintainer**, then add Account 2 and name it **Contributor**. Copy the Contributor address into a notepad.
 - [ ] **Fund the Maintainer:** go to <https://faucet.solana.com>, paste the Maintainer address, and request 1–2 SOL (signing in with GitHub raises the limit). The Contributor needs no SOL.
@@ -28,7 +28,7 @@
 ### 0:15 Level 1: Choose your repo (30 s)
 - Set languages to `python` and click **★ Find repos for me**.
 > "New contributors usually don't know where to start. One GitHub search finds active Hacktoberfest repos in my languages with at least three open good first issues."
-- Click a pick, or type `collective/icalendar`. (`SFTtech/openage`, an open-source Age of Empires II engine, also shows up and fits the arcade theme.) Choose **Beginner** and 4 hours, then click **Insert coin**.
+- Click a pick, or type `collective/icalendar`. (`SFTtech/openage`, an open-source Age of Empires II engine, also shows up and fits the arcade theme.) Choose **Beginner** and 4 hours, then click **Press start**. (Typing an owner and pressing Enter runs **Find repos** instead.)
 > "While it loads: the backend pulls the real open `good first issue` issues from GitHub and sends them to Google's **Gemma 4**, an open-weight model, through the Gemini API. If it fails, Gemini Flash and then NVIDIA's open-weight Nemotron take over automatically."
 
 ### 0:45 Level 2: Pick a quest (45 s)
@@ -53,7 +53,7 @@
 - Scroll back up and click **Pay** again on the same quest. It gets **blocked as already paid**, because the app checks the chain history first.
 
 ### 2:40 Close (20 s)
-> "It's MIT-licensed, runs on an open-weight model, falls back to a second provider automatically, and keeps the AI's suggestions separate from the payments a human approves. Next steps: link each wallet to a GitHub account, and add a real escrow program."
+> "It's MIT-licensed, runs on an open-weight model, falls back to backup models automatically, and keeps the AI's suggestions separate from the payments a human approves. Next steps: link each wallet to a GitHub account, and add a real escrow program."
 
 ---
 

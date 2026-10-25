@@ -44,7 +44,10 @@ export function QuestCard({ rec, rank, selected, onSelect, onDrop }: Props) {
         </span>
       </div>
 
-      <div className="mt-3 flex items-center gap-3" aria-label={`Fit score ${rec.fit_score} of 100`}>
+      <div
+        className="mt-3 flex items-center gap-3"
+        aria-label={`Fit score ${rec.fit_score} of 100`}
+      >
         <span className="font-pixel text-[0.5rem] text-muted">FIT</span>
         <div className="flex gap-[3px]" aria-hidden="true">
           {Array.from({ length: SEGMENTS }, (_, i) => (
@@ -82,14 +85,22 @@ export function QuestCard({ rec, rank, selected, onSelect, onDrop }: Props) {
 
       {selected ? (
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <span className="font-pixel text-[0.6rem] text-gold">★ QUEST ACCEPTED</span>
+          <span className="font-pixel text-[0.6rem] text-gold">
+            ★ QUEST ACCEPTED
+          </span>
           {/* only local state: nothing is saved or sent on-chain until Pay */}
-          <button onClick={onDrop} className="pixel-btn bg-accent text-foreground">
+          <button
+            onClick={onDrop}
+            className="pixel-btn bg-accent text-foreground"
+          >
             ✕ Drop quest
           </button>
         </div>
       ) : (
-        <button onClick={onSelect} className="pixel-btn mt-4 bg-violet text-white">
+        <button
+          onClick={onSelect}
+          className="pixel-btn mt-4 bg-violet text-white"
+        >
           Accept quest
         </button>
       )}

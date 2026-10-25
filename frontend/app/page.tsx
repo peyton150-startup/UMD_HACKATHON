@@ -47,7 +47,11 @@ export default function Home() {
   const [selected, setSelected] = useState<number | null>(null);
   const [lastContributor, setLastContributor] = useState("");
 
-  async function handleSearch(repo: string, profile: DeveloperProfile, labels: string[]) {
+  async function handleSearch(
+    repo: string,
+    profile: DeveloperProfile,
+    labels: string[]
+  ) {
     setLoading(true);
     setError(null);
     setResult(null);
@@ -68,15 +72,20 @@ export default function Home() {
     <main className="mx-auto max-w-5xl px-4 pb-24 pt-6 sm:px-6">
       {/* title screen */}
       <div className="text-center">
-        <p className="font-pixel text-[0.55rem] text-violet">HACKTOBERFEST · GDSC UMD · 2026</p>
+        <p className="font-pixel text-[0.55rem] text-violet">
+          HACKTOBERFEST · GDSC UMD · 2026
+        </p>
         <h1 className="mt-4 font-pixel text-2xl leading-snug sm:text-4xl">
           BOUNTY<span className="text-primary">BRIDGE</span>
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-xl text-muted">
-          An open-weight AI finds the open-source issue that fits you. A maintainer
-          approves your PR. Solana pays the bounty and keeps the score.
+          An open-weight AI finds the open-source issue that fits you. A
+          maintainer approves your PR. Solana pays the bounty and keeps the
+          score.
         </p>
-        <p className="blink mt-4 font-pixel text-[0.6rem] text-gold">PRESS START</p>
+        <p className="blink mt-4 font-pixel text-[0.6rem] text-gold">
+          PRESS START
+        </p>
       </div>
 
       <Level n={1} title="CHOOSE YOUR REPO">
@@ -96,14 +105,20 @@ export default function Home() {
             <p className="mb-4 text-muted">
               {data.recommendations.length} quests from{" "}
               <span className="text-foreground">{data.repo}</span> · model{" "}
-              <span className="text-neon">{data.provider}</span> · validated on attempt{" "}
-              <span className={data.attempts > 1 ? "text-gold" : "text-neon"}>{data.attempts}</span>
-              {data.attempts > 1 && " (first answer cited an issue that doesn't exist and was rejected)"}
+              <span className="text-neon">{data.provider}</span> · validated on
+              attempt{" "}
+              <span className={data.attempts > 1 ? "text-gold" : "text-neon"}>
+                {data.attempts}
+              </span>
+              {data.attempts > 1 &&
+                " (first answer cited an issue that doesn't exist and was rejected)"}
               {" · "}
               {(data.labels_used ?? []).length > 0 ? (
                 <>labels: {data.labels_used.join(", ")}</>
               ) : (
-                <span className="text-gold">no labeled issues found, showing all open issues</span>
+                <span className="text-gold">
+                  no labeled issues found, showing all open issues
+                </span>
               )}
               {result?.replayed && (
                 <span className="ml-2 border-2 border-gold px-1 text-gold">

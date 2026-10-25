@@ -91,6 +91,12 @@ export function RepoForm({ loading, onSubmit }: Props) {
             className="pixel-input"
             value={repo}
             onChange={(e) => setRepo(e.target.value)}
+            onKeyDown={(e) => {
+              // Enter here means "find repos" (the button beside it), not the whole form
+              if (e.key !== "Enter") return;
+              e.preventDefault();
+              if (!discovering && langList.length > 0) handleDiscover();
+            }}
             placeholder="owner/name or https://github.com/owner/name"
             autoCapitalize="none"
             spellCheck={false}
@@ -128,7 +134,8 @@ export function RepoForm({ loading, onSubmit }: Props) {
             </p>
             <ul className="mt-2 grid gap-2 sm:grid-cols-2">
               {picks.map((p) => {
-                const chosen = repo.trim().toLowerCase() === p.full_name.toLowerCase();
+                const chosen =
+                  repo.trim().toLowerCase() === p.full_name.toLowerCase();
                 return (
                   <li key={p.full_name}>
                     <button
@@ -142,8 +149,12 @@ export function RepoForm({ loading, onSubmit }: Props) {
                       }`}
                     >
                       <span className="flex items-baseline justify-between gap-2">
-                        <span className="break-all text-foreground">{p.full_name}</span>
-                        <span className="shrink-0 text-gold">★ {p.stars.toLocaleString()}</span>
+                        <span className="break-all text-foreground">
+                          {p.full_name}
+                        </span>
+                        <span className="shrink-0 text-gold">
+                          ★ {p.stars.toLocaleString()}
+                        </span>
                       </span>
                       <span className="block text-muted">
                         {p.language ?? "?"}
@@ -211,8 +222,12 @@ export function RepoForm({ loading, onSubmit }: Props) {
           disabled={!canSubmit}
           className="pixel-btn w-full bg-primary text-primary-foreground"
         >
-          {loading ? "Loading level..." : "▶ Insert coin · find quests"}
+          {loading ? "Loading level..." : "▶ Press start · find quests"}
         </button>
+        <p className="mt-2 text-center text-muted">
+          Free to play: finding repos, finding quests and accepting one cost
+          nothing. SOL only moves when a maintainer pays a bounty in Level 3.
+        </p>
       </div>
     </form>
   );

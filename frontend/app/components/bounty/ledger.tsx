@@ -41,7 +41,8 @@ export function Ledger({ initialAddress }: { initialAddress: string }) {
           parsed.push({
             ...record,
             signature: s.signature,
-            time: s.blockTime != null ? new Date(Number(s.blockTime) * 1000) : null,
+            time:
+              s.blockTime != null ? new Date(Number(s.blockTime) * 1000) : null,
           });
         }
       }
@@ -87,7 +88,9 @@ export function Ledger({ initialAddress }: { initialAddress: string }) {
             QUESTS CLEARED: {rows.length}
           </p>
           {rows.length === 0 ? (
-            <p className="mt-2 text-muted">No BountyBridge payouts yet. Go clear a quest!</p>
+            <p className="mt-2 text-muted">
+              No BountyBridge payouts yet. Go clear a quest!
+            </p>
           ) : (
             <ol className="mt-3 space-y-2">
               {rows.map((r, i) => (
@@ -95,11 +98,18 @@ export function Ledger({ initialAddress }: { initialAddress: string }) {
                   key={r.signature}
                   className="flex flex-wrap items-baseline gap-x-3 border-b-2 border-border-low pb-2"
                 >
-                  <span className="text-gold">{String(i + 1).padStart(2, "0")}.</span>
+                  <span className="text-gold">
+                    {String(i + 1).padStart(2, "0")}.
+                  </span>
                   <span className="min-w-0 flex-1 break-all">
                     {r.repo}#{r.issueNumber}
                   </span>
-                  <a href={r.prUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-gold">
+                  <a
+                    href={r.prUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-gold"
+                  >
                     PR
                   </a>
                   <a
@@ -110,7 +120,11 @@ export function Ledger({ initialAddress }: { initialAddress: string }) {
                   >
                     tx
                   </a>
-                  {r.time && <span className="text-muted">{r.time.toLocaleDateString()}</span>}
+                  {r.time && (
+                    <span className="text-muted">
+                      {r.time.toLocaleDateString()}
+                    </span>
+                  )}
                 </li>
               ))}
             </ol>

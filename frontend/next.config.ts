@@ -9,7 +9,8 @@ const nextConfig: NextConfig = {
     const backend =
       process.env.NODE_ENV === "development"
         ? "http://localhost:8000"
-        : (process.env.BACKEND_URL ?? "https://backend-eight-smoky-28.vercel.app");
+        : (process.env.BACKEND_URL ??
+          "https://backend-eight-smoky-28.vercel.app");
     return [{ source: "/api/:path*", destination: `${backend}/api/:path*` }];
   },
   turbopack: {

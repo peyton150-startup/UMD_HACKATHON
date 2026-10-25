@@ -21,3 +21,6 @@ Thumbs.db
 
 # local Surfpool chain logs
 .surfpool/
+
+# throwaway Devnet test keypairs
+test-wallets/

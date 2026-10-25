@@ -29,7 +29,9 @@ describe("bounty memo", () => {
 
   test("accepts only GitHub pull request links", () => {
     expect(isPullRequestUrl(record.prUrl)).toBe(true);
-    expect(isPullRequestUrl("https://github.com/owner/repo/issues/12")).toBe(false);
+    expect(isPullRequestUrl("https://github.com/owner/repo/issues/12")).toBe(
+      false
+    );
     expect(isPullRequestUrl("https://evil.com/owner/repo/pull/1")).toBe(false);
   });
 });

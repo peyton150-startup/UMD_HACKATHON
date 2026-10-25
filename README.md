@@ -44,7 +44,9 @@ All three are called through one OpenAI-compatible interface (`backend/agent/pro
 
 
 
-`PROVIDER_ORDER` (default `gemma,gemini,nvidia`) changes the order; providers without a key are skipped. `GEMMA_MODEL`, `GEMINI_MODEL` and `NVIDIA_MODEL` override the models. Whatever comes back is validated with Pydantic and checked against real GitHub issue numbers before it reaches the UI.
+A fourth backup, **Groq**, is used only if `GROQ_API_KEY` is set.
+
+`PROVIDER_ORDER` (default `gemma,gemini,nvidia,groq`) changes the order; providers without a key are skipped. `GEMMA_MODEL`, `GEMINI_MODEL`, `NVIDIA_MODEL` and `GROQ_MODEL` override the models. Whatever comes back is validated with Pydantic and checked against real GitHub issue numbers before it reaches the UI.
 
 
 

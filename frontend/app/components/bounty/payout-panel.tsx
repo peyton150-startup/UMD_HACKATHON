@@ -7,7 +7,11 @@ import { toast } from "sonner";
 import { useAppClient } from "../../lib/client-provider";
 import { useSend } from "../../lib/hooks/use-send";
 import { useCluster } from "../cluster-context";
-import { verifyPr, type PrVerification, type RecommendedIssue } from "../../lib/api";
+import {
+  verifyPr,
+  type PrVerification,
+  type RecommendedIssue,
+} from "../../lib/api";
 import {
   buildBountyMemo,
   isPullRequestUrl,
@@ -15,6 +19,7 @@ import {
   memoByteLength,
   parseBountyMemo,
 } from "../../lib/memo";
+import { fetchReceipt, type Receipt } from "../../lib/receipt";
 
 type Props = {
   repo: string;
@@ -50,15 +55,22 @@ export function PayoutPanel({ repo, quest, onPaid }: Props) {
   const [approved, setApproved] = useState(false);
   const [checking, setChecking] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
+  // read back from the chain after paying; null while checking
+  const [receipt, setReceipt] = useState<Receipt | null>(null);
+  const [receiptError, setReceiptError] = useState<string | null>(null);
   // the GitHub check is tied to the exact URL it was run for; editing the URL invalidates it
-  const [check, setCheck] = useState<{ url: string; result: PrVerification } | null>(null);
+  const [check, setCheck] = useState<{
+    url: string;
+    result: PrVerification;
+  } | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
 
   const record = { repo, issueNumber: quest.issue.number, prUrl };
   const memo = buildBountyMemo(record);
   const contributorAddr = toAddress(contributor);
-  const currentCheck = check && check.url === prUrl.trim() ? check.result : null;
+  const currentCheck =
+    check && check.url === prUrl.trim() ? check.result : null;
   const prVerified = currentCheck?.ok === true;
 
   async function handleVerify() {
@@ -78,9 +90,12 @@ export function PayoutPanel({ repo, quest, onPaid }: Props) {
     !connected && "Connect the maintainer wallet (top right)",
     isPullRequestUrl(prUrl) && !prVerified && "Verify the PR on GitHub first",
     contributor && !contributorAddr && "Contributor address is not valid",
-    prUrl && !isPullRequestUrl(prUrl) && "PR link must look like https://github.com/owner/repo/pull/123",
+    prUrl &&
+      !isPullRequestUrl(prUrl) &&
+      "PR link must look like https://github.com/owner/repo/pull/123",
     amountError(amount),
-    memoByteLength(memo) > MAX_MEMO_BYTES && "PR link is too long for an on-chain memo",
+    memoByteLength(memo) > MAX_MEMO_BYTES &&
+      "PR link is too long for an on-chain memo",
   ].filter(Boolean) as string[];
 
   const ready =
@@ -115,7 +130,12 @@ export function PayoutPanel({ repo, quest, onPaid }: Props) {
       if (existing) {
         toast.error("This issue was already paid to this contributor.", {
           description: (
-            <a href={getExplorerUrl(`/tx/${existing}`)} target="_blank" rel="noopener noreferrer" className="underline">
+            <a
+              href={getExplorerUrl(`/tx/${existing}`)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
               View earlier payout
             </a>
           ),
@@ -128,6 +148,14 @@ export function PayoutPanel({ repo, quest, onPaid }: Props) {
     } finally {
       setChecking(false);
     }
+
+    // Pin what we expect now, so later edits to the form can't change the check.
+    const expected = {
+      maintainer: signer.address,
+      contributor: contributorAddr,
+      lamports: solToLamports(sol(amount)),
+      memo,
+    };
 
     // One transaction, two instructions: the SOL transfer and its memo record.
     const sig = await run(
@@ -144,14 +172,24 @@ export function PayoutPanel({ repo, quest, onPaid }: Props) {
     );
     if (sig) {
       setSignature(sig);
+      setReceipt(null);
+      setReceiptError(null);
       onPaid(contributorAddr);
+      try {
+        setReceipt(await fetchReceipt(client.rpc, sig, expected));
+      } catch (e) {
+        setReceiptError(e instanceof Error ? e.message : String(e));
+      }
     }
   }
 
   return (
     <div className="pixel-box p-4 sm:p-5">
       <p className="text-muted">
-        Quest: <span className="text-foreground">#{quest.issue.number} {quest.issue.title}</span>
+        Quest:{" "}
+        <span className="text-foreground">
+          #{quest.issue.number} {quest.issue.title}
+        </span>
       </p>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -212,13 +250,17 @@ export function PayoutPanel({ repo, quest, onPaid }: Props) {
         >
           <p className="font-pixel text-[0.55rem]">
             GITHUB CHECK:{" "}
-            <span className={currentCheck.ok ? "text-neon" : "text-destructive"}>
+            <span
+              className={currentCheck.ok ? "text-neon" : "text-destructive"}
+            >
               {currentCheck.ok ? "PASSED" : "FAILED"}
             </span>
           </p>
           <ul className="mt-2 space-y-0.5">
             <li>
-              {currentCheck.repo_matches ? `✓ PR is in ${repo}` : `✗ ${currentCheck.reason}`}
+              {currentCheck.repo_matches
+                ? `✓ PR is in ${repo}`
+                : `✗ ${currentCheck.reason}`}
             </li>
             {currentCheck.repo_matches && (
               <li>
@@ -252,7 +294,8 @@ export function PayoutPanel({ repo, quest, onPaid }: Props) {
           className="mt-1 h-5 w-5 accent-[var(--gold)]"
         />
         <span>
-          I&apos;m the maintainer. I reviewed this PR and approve paying this bounty.
+          I&apos;m the maintainer. I reviewed this PR and approve paying this
+          bounty.
           <span className="block text-muted">
             The AI suggests. A human approves. The wallet signs.
           </span>
@@ -294,6 +337,41 @@ export function PayoutPanel({ repo, quest, onPaid }: Props) {
           >
             View transaction on Solana Explorer
           </a>
+          <div
+            className={`mt-3 border-t-3 pt-3 text-left ${receipt && !receipt.ok ? "border-destructive" : "border-neon"}`}
+            role="status"
+            data-testid="onchain-receipt"
+          >
+            <p className="font-pixel text-[0.55rem]">
+              ON-CHAIN RECEIPT:{" "}
+              {receipt ? (
+                <span className={receipt.ok ? "text-neon" : "text-destructive"}>
+                  {receipt.ok ? "VERIFIED" : "MISMATCH"}
+                </span>
+              ) : receiptError ? (
+                <span className="text-gold">NOT FOUND YET</span>
+              ) : (
+                <span className="text-muted">READING DEVNET...</span>
+              )}
+            </p>
+            {receipt && (
+              <ul className="mt-2 space-y-0.5">
+                {receipt.checks.map((c) => (
+                  <li key={c.label} className={c.ok ? "" : "text-destructive"}>
+                    {c.ok ? "✓" : "✗"} {c.label}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {receiptError && (
+              <p className="mt-2 text-muted">
+                {receiptError}. Check it on the explorer link above.
+              </p>
+            )}
+            <p className="mt-2 text-muted">
+              Read back from the chain, not from the wallet&apos;s reply.
+            </p>
+          </div>
         </div>
       )}
     </div>

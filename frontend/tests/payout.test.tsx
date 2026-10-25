@@ -16,10 +16,24 @@ import {
   lamports,
 } from "@solana/kit";
 import { ClientProvider } from "@solana/react";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { useMemo } from "react";
 import { Toaster } from "sonner";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  test,
+} from "vitest";
 import { Ledger } from "../app/components/bounty/ledger";
 import { PayoutPanel } from "../app/components/bounty/payout-panel";
 import { ClusterProvider } from "../app/components/cluster-context";
@@ -27,7 +41,11 @@ import { WalletButton } from "../app/components/wallet-button";
 import type { PrVerification, RecommendedIssue } from "../app/lib/api";
 import { buildBountyMemo } from "../app/lib/memo";
 import { createAppClient } from "../app/lib/solana-client";
-import { mockWalletAddress, registerMockWallet, resetMockWallet } from "./mock-wallet";
+import {
+  mockWalletAddress,
+  registerMockWallet,
+  resetMockWallet,
+} from "./mock-wallet";
 
 const RPC_URL = process.env.SURFPOOL_RPC_URL ?? "http://127.0.0.1:8899";
 const WS_URL = process.env.SURFPOOL_WS_URL ?? "ws://127.0.0.1:8900";
@@ -37,7 +55,13 @@ const BOUNTY_LAMPORTS = 50_000_000n; // the panel's default 0.05 SOL
 const REPO = "o/r";
 const PR_URL = "https://github.com/o/r/pull/9";
 const QUEST: RecommendedIssue = {
-  issue: { number: 7, title: "Fix typo in docs", body: "", labels: [], url: "https://github.com/o/r/issues/7" },
+  issue: {
+    number: 7,
+    title: "Fix typo in docs",
+    body: "",
+    labels: [],
+    url: "https://github.com/o/r/issues/7",
+  },
   fit_score: 90,
   rationale: "test",
   steps: ["do it"],
@@ -61,7 +85,9 @@ const up = await chainIsUp();
 const rpc = createSolanaRpc(RPC_URL);
 
 async function balance(owner: string): Promise<bigint> {
-  const { value } = await rpc.getBalance(address(owner), { commitment: "confirmed" }).send();
+  const { value } = await rpc
+    .getBalance(address(owner), { commitment: "confirmed" })
+    .send();
   return value;
 }
 
@@ -82,7 +108,9 @@ function stubVerifyPr() {
         author: "terp",
         merged_at: prMerged ? "2026-10-20T12:00:00Z" : null,
       };
-      return Promise.resolve(new Response(JSON.stringify(body), { status: 200 }));
+      return Promise.resolve(
+        new Response(JSON.stringify(body), { status: 200 })
+      );
     }
     return realFetch(input, init);
   }) as typeof fetch;
@@ -90,7 +118,11 @@ function stubVerifyPr() {
 
 function TestApp({ contributor }: { contributor: string }) {
   const client = useMemo(
-    () => createAppClient("localnet", { rpcUrl: RPC_URL, rpcSubscriptionsUrl: WS_URL }),
+    () =>
+      createAppClient("localnet", {
+        rpcUrl: RPC_URL,
+        rpcSubscriptionsUrl: WS_URL,
+      }),
     []
   );
   return (
@@ -106,24 +138,33 @@ function TestApp({ contributor }: { contributor: string }) {
 }
 
 async function connectWallet() {
-  fireEvent.click(await screen.findByRole("button", { name: "Connect Wallet" }));
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Connect Wallet" })
+  );
   fireEvent.click(await screen.findByRole("button", { name: "Mock Wallet" }));
   await screen.findByRole("button", { name: `Wallet ${mockWalletAddress}` });
 }
 
 async function fillPayout(contributor: string) {
-  fireEvent.change(screen.getByPlaceholderText("Contributor's Solana address"), {
-    target: { value: contributor },
-  });
-  fireEvent.change(screen.getByPlaceholderText("https://github.com/owner/repo/pull/123"), {
-    target: { value: PR_URL },
-  });
+  fireEvent.change(
+    screen.getByPlaceholderText("Contributor's Solana address"),
+    {
+      target: { value: contributor },
+    }
+  );
+  fireEvent.change(
+    screen.getByPlaceholderText("https://github.com/owner/repo/pull/123"),
+    {
+      target: { value: PR_URL },
+    }
+  );
   fireEvent.click(screen.getByRole("button", { name: "Verify" }));
   await screen.findByText(prMerged ? "PASSED" : "FAILED");
   fireEvent.click(screen.getByRole("checkbox"));
 }
 
-const payButton = () => screen.getByRole("button", { name: /Pay 0\.05 SOL bounty/ });
+const payButton = () =>
+  screen.getByRole("button", { name: /Pay 0\.05 SOL bounty/ });
 
 describe.skipIf(!up)("bounty payout on a local Surfpool chain", () => {
   let contributor: string;
@@ -131,12 +172,22 @@ describe.skipIf(!up)("bounty payout on a local Surfpool chain", () => {
   beforeAll(async () => {
     registerMockWallet();
     stubVerifyPr();
-    contributor = await getAddressFromPublicKey((await generateKeyPair()).publicKey);
+    contributor = await getAddressFromPublicKey(
+      (await generateKeyPair()).publicKey
+    );
     // fund the maintainer (mock wallet) on the local chain only
-    await rpc.requestAirdrop(address(mockWalletAddress), lamports(2n * LAMPORTS_PER_SOL)).send();
-    await waitFor(async () => expect(await balance(mockWalletAddress)).toBeGreaterThan(0n), {
-      timeout: 15_000,
-    });
+    await rpc
+      .requestAirdrop(
+        address(mockWalletAddress),
+        lamports(2n * LAMPORTS_PER_SOL)
+      )
+      .send();
+    await waitFor(
+      async () => expect(await balance(mockWalletAddress)).toBeGreaterThan(0n),
+      {
+        timeout: 15_000,
+      }
+    );
   }, 60_000);
 
   beforeEach(() => {
@@ -174,7 +225,9 @@ describe.skipIf(!up)("bounty payout on a local Surfpool chain", () => {
 
     expect(await balance(contributor)).toBe(BOUNTY_LAMPORTS);
 
-    const sigs = await rpc.getSignaturesForAddress(address(contributor), { limit: 10 }).send();
+    const sigs = await rpc
+      .getSignaturesForAddress(address(contributor), { limit: 10 })
+      .send();
     expect(sigs).toHaveLength(1);
     const tx = await rpc
       .getTransaction(sigs[0].signature, {
@@ -187,9 +240,20 @@ describe.skipIf(!up)("bounty payout on a local Surfpool chain", () => {
     // the maintainer's wallet paid the fee and signed
     expect(tx?.transaction.message.accountKeys[0]).toBe(mockWalletAddress);
     // the memo landed in the SAME transaction as the transfer
-    const memo = buildBountyMemo({ repo: REPO, issueNumber: QUEST.issue.number, prUrl: PR_URL });
+    const memo = buildBountyMemo({
+      repo: REPO,
+      issueNumber: QUEST.issue.number,
+      prUrl: PR_URL,
+    });
     expect(tx?.meta?.logMessages?.join("\n")).toContain(memo);
     expect(sigs[0].memo).toContain(memo);
+
+    // the panel read the transaction back and shows a verified receipt
+    await screen.findByText("VERIFIED", {}, { timeout: 15_000 });
+    const receipt = screen.getByTestId("onchain-receipt").textContent;
+    expect(receipt).toContain("0.05 SOL received by the contributor");
+    expect(receipt).toContain("Bounty memo recorded in the same transaction");
+    expect(receipt).toContain("Signed by the maintainer's wallet");
   });
 
   test("paying the same issue to the same contributor again is blocked", async () => {
@@ -207,7 +271,11 @@ describe.skipIf(!up)("bounty payout on a local Surfpool chain", () => {
     render(<TestApp contributor={contributor} />);
     fireEvent.click(screen.getByRole("button", { name: "Load scores" }));
     // the count is rendered as two text nodes, so match on the element's full text
-    await screen.findByText((_, el) => el?.tagName === "P" && el.textContent === "QUESTS CLEARED: 1", {}, { timeout: 15_000 });
+    await screen.findByText(
+      (_, el) => el?.tagName === "P" && el.textContent === "QUESTS CLEARED: 1",
+      {},
+      { timeout: 15_000 }
+    );
     expect(screen.getByText(`${REPO}#${QUEST.issue.number}`)).toBeTruthy();
   });
 });
