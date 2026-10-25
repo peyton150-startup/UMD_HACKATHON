@@ -215,11 +215,9 @@ export function RepoForm({ loading, onSubmit }: Props) {
             </button>
           ))}
         </div>
-        {questCount > 5 && (
-          <p className="mt-2 text-muted">
-            More quests take the AI longer to pick.
-          </p>
-        )}
+        <p className="mt-2 text-muted">
+          More quests take the AI longer to pick.
+        </p>
       </fieldset>
       <div className="grid content-start gap-1 self-start">
         <label>
