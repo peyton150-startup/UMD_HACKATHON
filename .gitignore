@@ -18,3 +18,6 @@ out/
 .DS_Store
 Thumbs.db
 .vscode/
+
+# local Surfpool chain logs
+.surfpool/
