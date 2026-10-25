@@ -28,7 +28,16 @@ Reply with JSON only, in this shape:
 {"recommendations": [{"issue_number": int, "fit_score": 0-100,
   "rationale": str, "steps": [str, ...], "files_to_look_at": [str, ...]}]}
 Return exactly 3 different recommendations (fewer only if fewer issues are listed), best fit first.
-Use the full 0-100 range for fit_score so the ranking is meaningful."""
+Use the full 0-100 range for fit_score so the ranking is meaningful.
+
+Match difficulty to the developer's experience and hours:
+- beginner: small, well-scoped work (docs, tests, typing, a contained bug) they can finish
+  in the hours given. Never design, architecture, or cross-cutting changes.
+- intermediate: a real feature or non-trivial bug touching a few files.
+- advanced: the hardest, most impactful issues listed (design, performance, cross-module
+  changes). Never pick a trivial docs or typo fix for them.
+fit_score is the fit for THIS developer: an easy issue scores low for an advanced developer,
+and a hard one scores low for a beginner. Say in the rationale why the difficulty fits."""
 
 
 class NoIssuesError(RuntimeError):

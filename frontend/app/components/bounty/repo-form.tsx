@@ -17,12 +17,20 @@ type Props = {
 
 const EXPERIENCE: Experience[] = ["beginner", "intermediate", "advanced"];
 
+// Which issues to fetch for each level. Empty = any open issue.
+// Changing the level swaps the labels only if the user hasn't typed their own.
+const DEFAULT_LABELS: Record<Experience, string> = {
+  beginner: "good first issue",
+  intermediate: "help wanted",
+  advanced: "",
+};
+
 export function RepoForm({ loading, onSubmit }: Props) {
   const [repo, setRepo] = useState("");
   const [languages, setLanguages] = useState("python");
   const [experience, setExperience] = useState<Experience>("beginner");
   const [hours, setHours] = useState(4);
-  const [labels, setLabels] = useState("good first issue");
+  const [labels, setLabels] = useState(DEFAULT_LABELS.beginner);
 
   const [picks, setPicks] = useState<RepoSuggestion[] | null>(null);
   const [pickScope, setPickScope] = useState<RepoScope | null>(null);
@@ -35,6 +43,13 @@ export function RepoForm({ loading, onSubmit }: Props) {
     .filter(Boolean);
   const canSubmit = repo.trim() !== "" && langList.length > 0 && !loading;
   const repoScope = parseRepoScope(repo);
+
+  function chooseExperience(lvl: Experience) {
+    if (labels.trim().toLowerCase() === DEFAULT_LABELS[experience]) {
+      setLabels(DEFAULT_LABELS[lvl]);
+    }
+    setExperience(lvl);
+  }
 
   async function handleDiscover() {
     setDiscovering(true);
@@ -156,6 +171,7 @@ export function RepoForm({ loading, onSubmit }: Props) {
           className="pixel-input mt-1"
           value={labels}
           onChange={(e) => setLabels(e.target.value)}
+          placeholder="any open issue"
         />
       </label>
       <fieldset>
@@ -165,7 +181,7 @@ export function RepoForm({ loading, onSubmit }: Props) {
             <button
               key={lvl}
               type="button"
-              onClick={() => setExperience(lvl)}
+              onClick={() => chooseExperience(lvl)}
               aria-pressed={experience === lvl}
               className={`flex-1 border-3 px-2 py-1 uppercase ${
                 experience === lvl
