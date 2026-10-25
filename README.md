@@ -8,7 +8,10 @@ Built at Hacktoberfest Hack Day College Park × GDSC UMD (Oct 25, 2026).
 
 1. **Pick a repo.** The backend fetches open `good first issue` issues from the GitHub REST API.
 2. **AI recommends.** An open-weight model returns 1–3 recommendations as JSON. Python validates them with Pydantic and **rejects any issue number GitHub did not return**, retrying once with the error fed back.
-3. **Maintainer approves and pays.** The maintainer signs a Devnet SOL transfer with a memo (issue URL + PR link) in their own wallet. No private keys live on the server.
+3. **GitHub verifies the PR.** `POST /verify-pr` checks with the GitHub API that the PR exists, belongs to the repo, and is merged. Pay stays locked until it passes.
+4. **Maintainer approves and pays.** The maintainer signs a Devnet SOL transfer with a memo (`repo#issue` + PR link) in their own wallet, in one transaction. No private keys live on the server. The app is locked to Devnet.
+
+If a repo has no issues with the requested label, the backend falls back to all open issues and says so. GitHub issue lists are cached for 5 minutes.
 
 ## Open-source AI
 

@@ -70,9 +70,14 @@ def check_against_issues(output: ModelOutput, issues: list[Issue]) -> list[Recom
 
 def recommend(req: RecommendRequest, github: GitHubService, llm: ChatProvider) -> RecommendResponse:
     repo = parse_repo(req.repo)
-    issues = github.list_issues(repo, req.labels)
+    labels_used = req.labels
+    issues = github.list_issues(repo, labels_used)
+    if not issues and labels_used:
+        # many repos don't use "good first issue"; fall back to any open issue
+        labels_used = []
+        issues = github.list_issues(repo, labels_used)
     if not issues:
-        raise NoIssuesError(f"no open issues in {repo} with labels {req.labels}")
+        raise NoIssuesError(f"no open issues in {repo}")
 
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
@@ -85,7 +90,11 @@ def recommend(req: RecommendRequest, github: GitHubService, llm: ChatProvider) -
             output = ModelOutput.model_validate(json.loads(raw))
             recs = check_against_issues(output, issues)
             return RecommendResponse(
-                repo=repo, provider=llm.name, attempts=attempt, recommendations=recs
+                repo=repo,
+                provider=llm.name,
+                attempts=attempt,
+                labels_used=labels_used,
+                recommendations=recs,
             )
         except (json.JSONDecodeError, ValidationError, ValueError) as exc:
             last_error = str(exc)

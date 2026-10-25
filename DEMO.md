@@ -37,6 +37,9 @@
 ### 1:30 Level 3: Approve and pay (45 s)
 > "Now I'm the maintainer. The contributor opened a PR and it got merged."
 - Paste the Contributor address and the PR link, and leave the amount at 0.05.
+- Click **Verify**. The backend asks GitHub whether the PR is in this repo and merged. It shows **GITHUB CHECK: PASSED** with the merge date and author.
+> "GitHub, not the AI, decides whether work is payable. The Pay button stays locked until this check passes."
+- (Optional, 10 s) Paste an open PR, e.g. `https://github.com/collective/icalendar/pull/2028` if it's still open, then click Verify and show **FAILED: PR is not merged yet**. Paste the merged one back.
 - Point to the **On-chain memo** preview: `bountybridge:v1|collective/icalendar#…|…/pull/1989`.
 - Tick the approval box.
 > "The AI suggests, a human approves, and the wallet signs. No private keys live on our server."
@@ -48,7 +51,7 @@
 - Scroll back up and click **Pay** again on the same quest. It gets **blocked as already paid**, because the app checks the chain history first.
 
 ### 2:40 Close (20 s)
-> "It's MIT-licensed, runs on an open-weight model, falls back to a second provider automatically, and keeps the AI's suggestions separate from the payments a human approves. Next steps: check through GitHub that the PR was really merged before the Pay button turns on, and add a real escrow program."
+> "It's MIT-licensed, runs on an open-weight model, falls back to a second provider automatically, and keeps the AI's suggestions separate from the payments a human approves. Next steps: link each wallet to a GitHub account, and add a real escrow program."
 
 ---
 
@@ -67,4 +70,5 @@
 - **Why a blockchain instead of a database?** The payment and the contribution record are the same public, checkable object. Contributors own their record. It works across repos with no central server to trust.
 - **What stops the AI from making things up?** Schema validation, plus cross-checking every issue number against GitHub, plus one retry with the error, then a clean failure. Tested in `backend/tests/test_orchestrator.py`.
 - **Why open-weight?** It can be self-hosted, so maintainers aren't locked into one vendor. The provider is a config switch (`backend/agent/provider.py`).
-- **What isn't done yet?** It's Devnet only, and the maintainer checks the PR by hand. Escrow and automatic merge checks are the next steps.
+- **How do you know the PR was merged?** The `/verify-pr` endpoint asks GitHub's API for the repo, merge status and author. Pay stays disabled until that passes, and editing the link resets the check.
+- **What isn't done yet?** It's Devnet only (mainnet is locked out in the UI). Whether the PR actually fixes the issue is still the maintainer's call; the app flags PRs that don't mention the issue number. Nothing links a wallet to a GitHub account yet. The duplicate-payout check only scans the contributor's last 100 transactions. Escrow is the next step.

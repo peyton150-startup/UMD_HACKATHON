@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { useAppClient } from "../../lib/client-provider";
 import { useSend } from "../../lib/hooks/use-send";
 import { useCluster } from "../cluster-context";
-import type { RecommendedIssue } from "../../lib/api";
+import { verifyPr, type PrVerification, type RecommendedIssue } from "../../lib/api";
 import {
   buildBountyMemo,
   isPullRequestUrl,
@@ -50,13 +50,33 @@ export function PayoutPanel({ repo, quest, onPaid }: Props) {
   const [approved, setApproved] = useState(false);
   const [checking, setChecking] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
+  // the GitHub check is tied to the exact URL it was run for; editing the URL invalidates it
+  const [check, setCheck] = useState<{ url: string; result: PrVerification } | null>(null);
+  const [verifying, setVerifying] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
 
   const record = { repo, issueNumber: quest.issue.number, prUrl };
   const memo = buildBountyMemo(record);
   const contributorAddr = toAddress(contributor);
+  const currentCheck = check && check.url === prUrl.trim() ? check.result : null;
+  const prVerified = currentCheck?.ok === true;
+
+  async function handleVerify() {
+    setVerifying(true);
+    setVerifyError(null);
+    try {
+      const result = await verifyPr(repo, quest.issue.number, prUrl);
+      setCheck({ url: prUrl.trim(), result });
+    } catch (e) {
+      setVerifyError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setVerifying(false);
+    }
+  }
 
   const problems = [
     !connected && "Connect the maintainer wallet (top right)",
+    isPullRequestUrl(prUrl) && !prVerified && "Verify the PR on GitHub first",
     contributor && !contributorAddr && "Contributor address is not valid",
     prUrl && !isPullRequestUrl(prUrl) && "PR link must look like https://github.com/owner/repo/pull/123",
     amountError(amount),
@@ -67,6 +87,7 @@ export function PayoutPanel({ repo, quest, onPaid }: Props) {
     connected &&
     contributorAddr &&
     isPullRequestUrl(prUrl) &&
+    prVerified &&
     approved &&
     problems.length === 0 &&
     !isSending &&
@@ -147,14 +168,24 @@ export function PayoutPanel({ repo, quest, onPaid }: Props) {
         </label>
         <label>
           <span className="text-muted">Merged PR link</span>
-          <input
-            className="pixel-input mt-1"
-            value={prUrl}
-            onChange={(e) => setPrUrl(e.target.value)}
-            placeholder="https://github.com/owner/repo/pull/123"
-            spellCheck={false}
-            autoCapitalize="none"
-          />
+          <div className="mt-1 flex gap-2">
+            <input
+              className="pixel-input"
+              value={prUrl}
+              onChange={(e) => setPrUrl(e.target.value)}
+              placeholder="https://github.com/owner/repo/pull/123"
+              spellCheck={false}
+              autoCapitalize="none"
+            />
+            <button
+              type="button"
+              onClick={handleVerify}
+              disabled={!isPullRequestUrl(prUrl) || verifying}
+              className="pixel-btn shrink-0 !px-3 bg-violet text-white"
+            >
+              {verifying ? "..." : "Verify"}
+            </button>
+          </div>
         </label>
         <label>
           <span className="text-muted">Bounty (SOL)</span>
@@ -168,6 +199,50 @@ export function PayoutPanel({ repo, quest, onPaid }: Props) {
           />
         </label>
       </div>
+
+      {verifyError && (
+        <p className="mt-3 text-destructive" role="alert">
+          ! {verifyError}
+        </p>
+      )}
+      {currentCheck && (
+        <div
+          className={`mt-4 border-3 p-3 ${currentCheck.ok ? "border-neon" : "border-destructive"}`}
+          role="status"
+        >
+          <p className="font-pixel text-[0.55rem]">
+            GITHUB CHECK:{" "}
+            <span className={currentCheck.ok ? "text-neon" : "text-destructive"}>
+              {currentCheck.ok ? "PASSED" : "FAILED"}
+            </span>
+          </p>
+          <ul className="mt-2 space-y-0.5">
+            <li>
+              {currentCheck.repo_matches ? `✓ PR is in ${repo}` : `✗ ${currentCheck.reason}`}
+            </li>
+            {currentCheck.repo_matches && (
+              <li>
+                {currentCheck.merged ? "✓" : "✗"}{" "}
+                {currentCheck.merged
+                  ? `Merged ${currentCheck.merged_at ? new Date(currentCheck.merged_at).toLocaleDateString() : ""}`
+                  : currentCheck.reason}
+              </li>
+            )}
+            {currentCheck.merged && (
+              <li className={currentCheck.mentions_issue ? "" : "text-gold"}>
+                {currentCheck.mentions_issue
+                  ? `✓ PR references issue #${quest.issue.number}`
+                  : `~ PR doesn't mention #${quest.issue.number}. Confirm it fixes the issue yourself.`}
+              </li>
+            )}
+            {currentCheck.title && (
+              <li className="text-muted">
+                &ldquo;{currentCheck.title}&rdquo; by @{currentCheck.author}
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
 
       <label className="mt-4 flex cursor-pointer items-start gap-3">
         <input

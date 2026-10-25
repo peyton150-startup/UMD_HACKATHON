@@ -7,12 +7,10 @@ import { systemProgram } from "@solana-program/system";
 
 export type ClusterMoniker = "devnet" | "testnet" | "mainnet" | "localnet";
 
-export const CLUSTERS: ClusterMoniker[] = [
-  "devnet",
-  "testnet",
-  "mainnet",
-  "localnet",
-];
+// Hackathon safety: only Devnet is selectable, so no real SOL can move.
+// A stored "mainnet" choice from earlier falls back to devnet (see cluster-context).
+// localnet stays in the type for the template's Surfpool tests.
+export const CLUSTERS: ClusterMoniker[] = ["devnet"];
 
 const CLUSTER_URLS: Record<ClusterMoniker, string> = {
   devnet: "https://api.devnet.solana.com",

@@ -61,4 +61,25 @@ class RecommendResponse(BaseModel):
     repo: str
     provider: str
     attempts: int
+    # labels actually used to pick issues; [] means no labeled issues, so all open issues
+    labels_used: list[str] = []
     recommendations: list[RecommendedIssue]
+
+
+class VerifyPrRequest(BaseModel):
+    repo: str
+    issue_number: int
+    pr_url: str
+
+
+class PrVerification(BaseModel):
+    """GitHub's answer about a PR. `ok` gates the payout button."""
+
+    ok: bool
+    reason: str
+    repo_matches: bool
+    merged: bool = False
+    mentions_issue: bool = False  # informational: PR title/body references the issue
+    title: str = ""
+    author: str = ""
+    merged_at: str | None = None

@@ -99,6 +99,12 @@ export default function Home() {
               <span className="text-neon">{data.provider}</span> · validated on attempt{" "}
               <span className={data.attempts > 1 ? "text-gold" : "text-neon"}>{data.attempts}</span>
               {data.attempts > 1 && " (first answer cited an issue that doesn't exist and was rejected)"}
+              {" · "}
+              {(data.labels_used ?? []).length > 0 ? (
+                <>labels: {data.labels_used.join(", ")}</>
+              ) : (
+                <span className="text-gold">no labeled issues found, showing all open issues</span>
+              )}
               {result?.replayed && (
                 <span className="ml-2 border-2 border-gold px-1 text-gold">
                   OFFLINE REPLAY of last real result
@@ -122,7 +128,13 @@ export default function Home() {
 
       <Level n={3} title="APPROVE & PAY BOUNTY" locked={!quest}>
         {data && quest && (
-          <PayoutPanel repo={data.repo} quest={quest} onPaid={setLastContributor} />
+          // key: switching quests starts a fresh form (no carried-over approval or signature)
+          <PayoutPanel
+            key={`${data.repo}#${quest.issue.number}`}
+            repo={data.repo}
+            quest={quest}
+            onPaid={setLastContributor}
+          />
         )}
       </Level>
 
