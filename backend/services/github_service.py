@@ -7,10 +7,14 @@ from collections.abc import Callable
 
 import httpx
 
-from agent.models import Issue, PrVerification
+from datetime import UTC, datetime, timedelta
+
+from agent.models import DiscoverResponse, Issue, PrVerification, RepoSuggestion
 
 API = "https://api.github.com"
 CACHE_TTL_S = 300  # closed issues drop out of recommendations within 5 minutes
+DISCOVER_TTL_S = 900  # GitHub search allows only 10-30 requests/min, so cache longer
+_LANG_RE = re.compile(r"^[\w#+.\- ]{1,30}$")
 _REPO_RE = re.compile(r"^(?:https?://github\.com/)?([\w.-]+)/([\w.-]+?)(?:\.git)?/?$")
 _PR_RE = re.compile(r"^https://github\.com/([\w.-]+)/([\w.-]+)/pull/(\d+)/?$")
 
@@ -43,6 +47,7 @@ class GitHubService:
         self.client = client or httpx.Client(base_url=API, headers=_headers(), timeout=15)
         self.clock = clock
         self._cache: dict[tuple, tuple[float, list[Issue]]] = {}
+        self._discover_cache: dict[tuple, tuple[float, DiscoverResponse]] = {}
 
     def list_issues(self, repo: str, labels: list[str], limit: int = 10) -> list[Issue]:
         key = (repo, tuple(labels), limit)
@@ -70,6 +75,55 @@ class GitHubService:
         ]
         self._cache[key] = (self.clock(), issues)
         return issues
+
+    def discover_repos(self, languages: list[str], limit: int = 6) -> DiscoverResponse:
+        """Active Hacktoberfest repos in these languages with 3+ open good-first-issues."""
+        langs = sorted({lang.strip().lower() for lang in languages if lang.strip()})[:5]
+        if not langs or not all(_LANG_RE.match(lang) for lang in langs):
+            raise ValueError("give 1-5 language names, e.g. python, typescript")
+
+        key = (tuple(langs), limit)
+        cached = self._discover_cache.get(key)
+        if cached and self.clock() - cached[0] < DISCOVER_TTL_S:
+            return cached[1]
+
+        since = (datetime.now(UTC) - timedelta(days=30)).date().isoformat()
+        # repeated language: qualifiers are OR'd by GitHub search
+        query = " ".join(
+            [
+                "topic:hacktoberfest",
+                "good-first-issues:>=3",
+                "archived:false",
+                "stars:50..20000",  # skip toy repos and giant ones newcomers get lost in
+                f"pushed:>={since}",
+                *(f'language:"{lang}"' for lang in langs),
+            ]
+        )
+        resp = self.client.get(
+            "/search/repositories",
+            params={"q": query, "sort": "stars", "order": "desc", "per_page": limit},
+        )
+        if resp.status_code == 403 or resp.status_code == 429:
+            raise GitHubError("GitHub search rate limit hit; wait a minute or set GITHUB_TOKEN")
+        if resp.status_code != 200:
+            raise GitHubError(f"GitHub {resp.status_code}: {resp.text[:200]}")
+
+        result = DiscoverResponse(
+            query=query,
+            repos=[
+                RepoSuggestion(
+                    full_name=item["full_name"],
+                    description=(item.get("description") or "")[:160],
+                    language=item.get("language"),
+                    stars=item["stargazers_count"],
+                    url=item["html_url"],
+                    pushed_at=item["pushed_at"],
+                )
+                for item in resp.json().get("items", [])
+            ],
+        )
+        self._discover_cache[key] = (self.clock(), result)
+        return result
 
     def verify_pull_request(self, repo: str, issue_number: int, pr_url: str) -> PrVerification:
         """Check that the PR exists, is in `repo`, and is merged. Never cached."""

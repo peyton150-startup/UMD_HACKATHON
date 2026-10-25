@@ -153,3 +153,32 @@ export async function verifyPr(
   }
   return (await res.json()) as PrVerification;
 }
+
+export type RepoSuggestion = {
+  full_name: string;
+  description: string;
+  language: string | null;
+  stars: number;
+  url: string;
+  pushed_at: string;
+};
+
+export type DiscoverResponse = { query: string; repos: RepoSuggestion[] };
+
+/** Active Hacktoberfest repos in these languages with 3+ open good-first-issues. */
+export async function discoverRepos(languages: string[]): Promise<DiscoverResponse> {
+  const params = new URLSearchParams({ languages: languages.join(",") });
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/discover?${params}`, {
+      signal: AbortSignal.timeout(20_000),
+    });
+  } catch {
+    throw new Error(`Backend unreachable at ${API_URL}. Is uvicorn running?`);
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(typeof body?.detail === "string" ? body.detail : `Backend error ${res.status}`);
+  }
+  return (await res.json()) as DiscoverResponse;
+}

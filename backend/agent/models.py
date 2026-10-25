@@ -66,6 +66,20 @@ class RecommendResponse(BaseModel):
     recommendations: list[RecommendedIssue]
 
 
+class RepoSuggestion(BaseModel):
+    full_name: str
+    description: str = ""
+    language: str | None = None
+    stars: int
+    url: str
+    pushed_at: str
+
+
+class DiscoverResponse(BaseModel):
+    query: str  # the exact GitHub search, shown so the filtering is transparent
+    repos: list[RepoSuggestion]
+
+
 class VerifyPrRequest(BaseModel):
     repo: str
     issue_number: int

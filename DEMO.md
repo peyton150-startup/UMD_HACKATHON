@@ -26,7 +26,9 @@
 > "The hardest part of Hacktoberfest for a newcomer is the first half hour: which issue do I pick? And maintainers have no lightweight way to reward the people who show up. BountyBridge fixes both: an open-weight AI picks your quest, and Solana pays the bounty and keeps score."
 
 ### 0:15 Level 1: Choose your repo (30 s)
-- Type `collective/icalendar`, languages `python`, **Beginner**, 4 hours, then click **Insert coin**.
+- Set languages to `python` and click **★ Find repos for me**.
+> "New contributors usually don't know where to start. One GitHub search finds active Hacktoberfest repos in my languages with at least three open good first issues."
+- Click a pick, or type `collective/icalendar`. (`SFTtech/openage`, an open-source Age of Empires II engine, also shows up and fits the arcade theme.) Choose **Beginner** and 4 hours, then click **Insert coin**.
 > "While it loads: the backend pulls the real open `good first issue` issues from GitHub and sends them to NVIDIA's **Nemotron**, an open-weight model, with Qwen on Groq as an automatic fallback."
 
 ### 0:45 Level 2: Pick a quest (45 s)

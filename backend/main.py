@@ -11,6 +11,7 @@ from fastapi import FastAPI, HTTPException  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 
 from agent.models import (  # noqa: E402
+    DiscoverResponse,
     PrVerification,
     RecommendRequest,
     RecommendResponse,
@@ -45,6 +46,17 @@ def recommend_endpoint(req: RecommendRequest) -> RecommendResponse:
     except NoIssuesError as exc:
         raise HTTPException(404, str(exc)) from exc
     except (GitHubError, ProviderError, RecommendationError) as exc:
+        raise HTTPException(502, str(exc)) from exc
+
+
+@app.get("/discover", response_model=DiscoverResponse)
+def discover_endpoint(languages: str) -> DiscoverResponse:
+    """Suggest repos for a comma-separated language list, e.g. ?languages=python,go"""
+    try:
+        return github.discover_repos(languages.split(","))
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except GitHubError as exc:
         raise HTTPException(502, str(exc)) from exc
 
 

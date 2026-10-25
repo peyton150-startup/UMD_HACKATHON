@@ -107,3 +107,44 @@ def test_missing_pr_is_rejected():
 def test_bad_pr_url_raises():
     with pytest.raises(ValueError):
         service(pr_handler(MERGED)).verify_pull_request("o/r", 5, "https://github.com/o/r/issues/9")
+
+
+# --- repo discovery ---------------------------------------------------------
+
+REPO_ITEM = {
+    "full_name": "o/r",
+    "description": "a repo",
+    "language": "Python",
+    "stargazers_count": 120,
+    "html_url": "https://github.com/o/r",
+    "pushed_at": "2026-10-24T00:00:00Z",
+}
+
+
+def test_discover_builds_query_and_caches():
+    seen = []
+
+    def handler(request):
+        seen.append(request.url.params["q"])
+        return httpx.Response(200, json={"items": [REPO_ITEM]})
+
+    gh = service(handler)
+    result = gh.discover_repos(["Python", " typescript ", "python"])
+    gh.discover_repos(["typescript", "python"])  # same set, different order
+    assert len(seen) == 1  # second call served from cache
+    q = seen[0]
+    assert "topic:hacktoberfest" in q and "good-first-issues:>=3" in q
+    assert 'language:"python"' in q and 'language:"typescript"' in q
+    assert result.repos[0].full_name == "o/r"
+
+
+def test_discover_rejects_junk_language():
+    with pytest.raises(ValueError):
+        service(lambda r: httpx.Response(200, json={})).discover_repos(['python" stars:>1'])
+
+
+def test_discover_rate_limit_is_a_clear_error():
+    from services.github_service import GitHubError
+
+    with pytest.raises(GitHubError, match="rate limit"):
+        service(lambda r: httpx.Response(403, json={})).discover_repos(["python"])

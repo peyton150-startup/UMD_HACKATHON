@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import type { DeveloperProfile, Experience } from "../../lib/api";
+import {
+  discoverRepos,
+  type DeveloperProfile,
+  type Experience,
+  type RepoSuggestion,
+} from "../../lib/api";
 
 type Props = {
   loading: boolean;
@@ -17,11 +22,27 @@ export function RepoForm({ loading, onSubmit }: Props) {
   const [hours, setHours] = useState(4);
   const [labels, setLabels] = useState("good first issue");
 
+  const [picks, setPicks] = useState<RepoSuggestion[] | null>(null);
+  const [discovering, setDiscovering] = useState(false);
+  const [discoverError, setDiscoverError] = useState<string | null>(null);
+
   const langList = languages
     .split(",")
     .map((l) => l.trim())
     .filter(Boolean);
   const canSubmit = repo.trim() !== "" && langList.length > 0 && !loading;
+
+  async function handleDiscover() {
+    setDiscovering(true);
+    setDiscoverError(null);
+    try {
+      setPicks((await discoverRepos(langList)).repos);
+    } catch (e) {
+      setDiscoverError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDiscovering(false);
+    }
+  }
 
   return (
     <form
@@ -39,17 +60,74 @@ export function RepoForm({ loading, onSubmit }: Props) {
         );
       }}
     >
-      <label className="sm:col-span-2">
-        <span className="text-muted">GitHub repo</span>
-        <input
-          className="pixel-input mt-1"
-          value={repo}
-          onChange={(e) => setRepo(e.target.value)}
-          placeholder="owner/name or https://github.com/owner/name"
-          autoCapitalize="none"
-          spellCheck={false}
-        />
-      </label>
+      <div className="sm:col-span-2">
+        <label htmlFor="repo-input" className="text-muted">
+          GitHub repo
+        </label>
+        <div className="mt-1 flex flex-col gap-2 sm:flex-row">
+          <input
+            id="repo-input"
+            className="pixel-input"
+            value={repo}
+            onChange={(e) => setRepo(e.target.value)}
+            placeholder="owner/name or https://github.com/owner/name"
+            autoCapitalize="none"
+            spellCheck={false}
+          />
+          <button
+            type="button"
+            onClick={handleDiscover}
+            disabled={discovering || langList.length === 0}
+            className="pixel-btn shrink-0 bg-gold text-black"
+          >
+            {discovering ? "Scanning..." : "★ Find repos for me"}
+          </button>
+        </div>
+
+        {discoverError && (
+          <p className="mt-2 text-destructive" role="alert">
+            ! {discoverError}
+          </p>
+        )}
+
+        {picks && (
+          <div className="mt-3">
+            <p className="text-muted">
+              {picks.length > 0
+                ? `Active Hacktoberfest repos in ${langList.join(", ")} with 3+ open good first issues:`
+                : `No matching Hacktoberfest repos for ${langList.join(", ")}. Try another language.`}
+            </p>
+            <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+              {picks.map((p) => {
+                const chosen = repo.trim().toLowerCase() === p.full_name.toLowerCase();
+                return (
+                  <li key={p.full_name}>
+                    <button
+                      type="button"
+                      onClick={() => setRepo(p.full_name)}
+                      aria-pressed={chosen}
+                      className={`h-full w-full border-3 p-2 text-left transition-colors ${
+                        chosen
+                          ? "border-gold bg-accent"
+                          : "border-border-low hover:border-border hover:bg-accent"
+                      }`}
+                    >
+                      <span className="flex items-baseline justify-between gap-2">
+                        <span className="break-all text-foreground">{p.full_name}</span>
+                        <span className="shrink-0 text-gold">★ {p.stars.toLocaleString()}</span>
+                      </span>
+                      <span className="block text-muted">
+                        {p.language ?? "?"}
+                        {p.description && ` · ${p.description}`}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+      </div>
       <label>
         <span className="text-muted">Your languages (comma separated)</span>
         <input
