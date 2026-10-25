@@ -28,9 +28,12 @@ Connect a wallet set to **Devnet**. You can get Devnet SOL from [faucet.solana.c
 
 ## Checks
 
+Saved quests and contribution checklists are kept in browser storage. Resuming a quest restores its recommendation, not its approval or wallet state. The starter guide links to files pinned to a GitHub commit. Reward receipts can be copied or shared only after the on-chain checks pass.
+
 ```shell
 npm run ci          # build, typecheck, lint, format check, tests
 npm run test:chain  # payout test against a local Surfpool chain
+npx vitest run tests/quest-library.test.ts tests/quest-flow.test.tsx tests/contributor-ui.test.tsx tests/reward-receipt.test.tsx tests/storage-failure.test.tsx
 ```
 
 The tests render the real components with a mock wallet ([`tests/mock-wallet.ts`](tests/mock-wallet.ts)) and a local Solana chain from [`@solana/surfpool`](https://www.npmjs.com/package/@solana/surfpool). Surfpool only ships for macOS and Linux, so on Windows the chain tests need WSL (see the project README).

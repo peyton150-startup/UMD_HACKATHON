@@ -30,7 +30,7 @@ export type ReceiptCheck = { ok: boolean; label: string };
 
 export type Receipt = { ok: boolean; checks: ReceiptCheck[] };
 
-function formatSol(lamports: bigint): string {
+export function formatSol(lamports: bigint): string {
   const whole = lamports / 1_000_000_000n;
   const frac = (lamports % 1_000_000_000n).toString().padStart(9, "0");
   const trimmed = frac.replace(/0+$/, "");

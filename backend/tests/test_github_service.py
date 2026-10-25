@@ -45,6 +45,8 @@ class OneReplyLLM:
 
 def test_falls_back_to_all_open_issues_when_label_matches_nothing():
     def handler(request):
+        if not request.url.path.endswith("/issues"):
+            return httpx.Response(404)
         has_label = "labels" in request.url.params
         return httpx.Response(200, json=[] if has_label else [ISSUE])
 

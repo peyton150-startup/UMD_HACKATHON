@@ -19,7 +19,8 @@ import {
   memoByteLength,
   parseBountyMemo,
 } from "../../lib/memo";
-import { fetchReceipt, type Receipt } from "../../lib/receipt";
+import { fetchReceipt, formatSol, type Receipt } from "../../lib/receipt";
+import { RewardReceipt, type RewardDetails } from "./reward-receipt";
 
 type Props = {
   repo: string;
@@ -54,7 +55,7 @@ export function PayoutPanel({ repo, quest, onPaid }: Props) {
   const [amount, setAmount] = useState("0.05");
   const [approved, setApproved] = useState(false);
   const [checking, setChecking] = useState(false);
-  const [signature, setSignature] = useState<string | null>(null);
+  const [paid, setPaid] = useState<RewardDetails | null>(null);
   // read back from the chain after paying; null while checking
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [receiptError, setReceiptError] = useState<string | null>(null);
@@ -106,7 +107,8 @@ export function PayoutPanel({ repo, quest, onPaid }: Props) {
     approved &&
     problems.length === 0 &&
     !isSending &&
-    !checking;
+    !checking &&
+    !paid;
 
   /** Look at the contributor's recent transactions for a payout on this same issue. */
   async function alreadyPaid(dest: Address): Promise<string | null> {
@@ -156,6 +158,15 @@ export function PayoutPanel({ repo, quest, onPaid }: Props) {
       lamports: solToLamports(sol(amount)),
       memo,
     };
+    const details = {
+      repo,
+      issueNumber: quest.issue.number,
+      issueTitle: quest.issue.title,
+      prUrl: prUrl.trim(),
+      amount: formatSol(expected.lamports),
+      maintainer: signer.address,
+      contributor: contributorAddr,
+    };
 
     // One transaction, two instructions: the SOL transfer and its memo record.
     const sig = await run(
@@ -171,7 +182,11 @@ export function PayoutPanel({ repo, quest, onPaid }: Props) {
       "Bounty paid · quest complete!"
     );
     if (sig) {
-      setSignature(sig);
+      setPaid({
+        ...details,
+        signature: sig,
+        explorerUrl: getExplorerUrl(`/tx/${sig}`),
+      });
       setReceipt(null);
       setReceiptError(null);
       onPaid(contributorAddr);
@@ -197,6 +212,7 @@ export function PayoutPanel({ repo, quest, onPaid }: Props) {
           <span className="text-muted">Contributor wallet (Devnet)</span>
           <input
             className="pixel-input mt-1"
+            disabled={isSending || checking || !!paid}
             value={contributor}
             onChange={(e) => setContributor(e.target.value)}
             placeholder="Contributor's Solana address"
@@ -209,6 +225,7 @@ export function PayoutPanel({ repo, quest, onPaid }: Props) {
           <div className="mt-1 flex gap-2">
             <input
               className="pixel-input"
+              disabled={isSending || checking || !!paid}
               value={prUrl}
               onChange={(e) => setPrUrl(e.target.value)}
               placeholder="https://github.com/owner/repo/pull/123"
@@ -218,7 +235,13 @@ export function PayoutPanel({ repo, quest, onPaid }: Props) {
             <button
               type="button"
               onClick={handleVerify}
-              disabled={!isPullRequestUrl(prUrl) || verifying}
+              disabled={
+                !isPullRequestUrl(prUrl) ||
+                verifying ||
+                isSending ||
+                checking ||
+                !!paid
+              }
               className="pixel-btn shrink-0 !px-3 bg-violet text-white"
             >
               {verifying ? "..." : "Verify"}
@@ -229,6 +252,7 @@ export function PayoutPanel({ repo, quest, onPaid }: Props) {
           <span className="text-muted">Bounty (SOL)</span>
           <input
             className="pixel-input mt-1"
+            disabled={isSending || checking || !!paid}
             type="number"
             min="0"
             step="0.01"
@@ -289,6 +313,7 @@ export function PayoutPanel({ repo, quest, onPaid }: Props) {
       <label className="mt-4 flex cursor-pointer items-start gap-3">
         <input
           type="checkbox"
+          disabled={isSending || checking || !!paid}
           checked={approved}
           onChange={(e) => setApproved(e.target.checked)}
           className="mt-1 h-5 w-5 accent-[var(--gold)]"
@@ -323,56 +348,22 @@ export function PayoutPanel({ repo, quest, onPaid }: Props) {
           ? "Checking history..."
           : isSending
             ? "Waiting for wallet..."
-            : `🪙 Pay ${amount} SOL bounty`}
+            : paid
+              ? "Payment confirmed"
+              : `🪙 Pay ${amount} SOL bounty`}
       </button>
 
-      {signature && (
-        <div className="mt-4 border-3 border-neon p-3 text-center">
-          <p className="font-pixel text-[0.65rem] text-neon">QUEST COMPLETE!</p>
-          <a
-            href={getExplorerUrl(`/tx/${signature}`)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 inline-block break-all underline hover:text-gold"
-          >
-            View transaction on Solana Explorer
-          </a>
-          <div
-            className={`mt-3 border-t-3 pt-3 text-left ${receipt && !receipt.ok ? "border-destructive" : "border-neon"}`}
-            role="status"
-            data-testid="onchain-receipt"
-          >
-            <p className="font-pixel text-[0.55rem]">
-              ON-CHAIN RECEIPT:{" "}
-              {receipt ? (
-                <span className={receipt.ok ? "text-neon" : "text-destructive"}>
-                  {receipt.ok ? "VERIFIED" : "MISMATCH"}
-                </span>
-              ) : receiptError ? (
-                <span className="text-gold">NOT FOUND YET</span>
-              ) : (
-                <span className="text-muted">READING DEVNET...</span>
-              )}
-            </p>
-            {receipt && (
-              <ul className="mt-2 space-y-0.5">
-                {receipt.checks.map((c) => (
-                  <li key={c.label} className={c.ok ? "" : "text-destructive"}>
-                    {c.ok ? "✓" : "✗"} {c.label}
-                  </li>
-                ))}
-              </ul>
-            )}
-            {receiptError && (
-              <p className="mt-2 text-muted">
-                {receiptError}. Check it on the explorer link above.
-              </p>
-            )}
-            <p className="mt-2 text-muted">
-              Read back from the chain, not from the wallet&apos;s reply.
-            </p>
-          </div>
-        </div>
+      {paid && (
+        <>
+          <p className="mt-4 font-pixel text-[0.65rem] text-neon">
+            QUEST COMPLETE!
+          </p>
+          <RewardReceipt
+            details={paid}
+            receipt={receipt}
+            error={receiptError}
+          />
+        </>
       )}
     </div>
   );

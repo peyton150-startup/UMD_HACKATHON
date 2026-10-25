@@ -9,7 +9,8 @@ import httpx
 
 from datetime import UTC, datetime, timedelta
 
-from agent.models import DiscoverResponse, Issue, PrVerification, RepoSuggestion
+from agent.models import DiscoverResponse, Issue, PrVerification, RepoSuggestion, RepoContext
+from services.repo_context import fetch_repo_context
 
 API = "https://api.github.com"
 CACHE_TTL_S = 300  # closed issues drop out of recommendations within 5 minutes
@@ -50,6 +51,18 @@ class GitHubService:
         self.clock = clock
         self._cache: dict[tuple, tuple[float, list[Issue]]] = {}
         self._discover_cache: dict[tuple, tuple[float, DiscoverResponse]] = {}
+        self._context_cache: dict[tuple, tuple[float, RepoContext]] = {}
+
+    def get_repo_context(self, repo: str, issues: list[Issue]) -> RepoContext:
+        key = (repo, tuple(i.title for i in issues))
+        cached = self._context_cache.get(key)
+        if cached and self.clock() - cached[0] < CACHE_TTL_S:
+            return cached[1]
+        context = fetch_repo_context(self.client, repo, issues)
+        if len(self._context_cache) >= 64:
+            self._context_cache.pop(next(iter(self._context_cache)))
+        self._context_cache[key] = (self.clock(), context)
+        return context
 
     def list_issues(self, repo: str, labels: list[str], limit: int = 10) -> list[Issue]:
         key = (repo, tuple(labels), limit)

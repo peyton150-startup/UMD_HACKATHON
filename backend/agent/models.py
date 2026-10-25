@@ -4,6 +4,9 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+MIN_RECS = 3
+MAX_RECS = 9
+
 
 class DeveloperProfile(BaseModel):
     languages: list[str] = Field(min_length=1, examples=[["python", "typescript"]])
@@ -15,6 +18,8 @@ class RecommendRequest(BaseModel):
     repo: str = Field(examples=["owner/name or https://github.com/owner/name"])
     profile: DeveloperProfile
     labels: list[str] = Field(default_factory=lambda: ["good first issue"])
+    # how many quests to return; the UI slider sends 3-9
+    count: int = Field(default=3, ge=MIN_RECS, le=MAX_RECS)
 
 
 class Issue(BaseModel):
@@ -36,7 +41,7 @@ class Recommendation(BaseModel):
 class ModelOutput(BaseModel):
     """What we ask the LLM to return. Parsed before we trust anything in it."""
 
-    recommendations: list[Recommendation] = Field(min_length=1, max_length=3)
+    recommendations: list[Recommendation] = Field(min_length=1, max_length=MAX_RECS)
 
     @field_validator("recommendations")
     @classmethod
@@ -57,6 +62,22 @@ class RecommendedIssue(BaseModel):
     files_to_look_at: list[str]
 
 
+class RepoDocument(BaseModel):
+    path: str
+    url: str
+    excerpt: str
+
+
+class RepoContext(BaseModel):
+    available: bool = False
+    revision: str = ""
+    files: list[str] = Field(default_factory=list)
+    guides: list[RepoDocument] = Field(default_factory=list)
+    code_samples: list[RepoDocument] = Field(default_factory=list)
+    truncated: bool = False
+    warning: str = ""
+
+
 class RecommendResponse(BaseModel):
     repo: str
     provider: str
@@ -64,6 +85,7 @@ class RecommendResponse(BaseModel):
     # labels actually used to pick issues; [] means no labeled issues, so all open issues
     labels_used: list[str] = []
     recommendations: list[RecommendedIssue]
+    repo_context: RepoContext = Field(default_factory=RepoContext)
 
 
 class RepoSuggestion(BaseModel):

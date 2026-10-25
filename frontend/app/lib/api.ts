@@ -30,6 +30,18 @@ export type RecommendResponse = {
   attempts: number;
   labels_used: string[];
   recommendations: RecommendedIssue[];
+  repo_context?: RepoContext;
+};
+
+export type RepoDocument = { path: string; url: string; excerpt: string };
+export type RepoContext = {
+  available: boolean;
+  revision: string;
+  files: string[];
+  guides: RepoDocument[];
+  code_samples: RepoDocument[];
+  truncated: boolean;
+  warning: string;
 };
 
 export type PrVerification = {
@@ -57,7 +69,12 @@ const CACHE_PREFIX = "bountybridge:last:";
 const REQUEST_TIMEOUT_MS = 90_000;
 
 /** One cache entry per exact request, so a different profile never replays someone else's result. */
-function cacheKey(repo: string, profile: DeveloperProfile, labels: string[]) {
+function cacheKey(
+  repo: string,
+  profile: DeveloperProfile,
+  labels: string[],
+  count = 3
+) {
   return (
     CACHE_PREFIX +
     JSON.stringify([
@@ -66,6 +83,8 @@ function cacheKey(repo: string, profile: DeveloperProfile, labels: string[]) {
       profile.experience,
       profile.hours_available,
       [...labels].map((l) => l.toLowerCase()).sort(),
+      // only non-default counts change the key, so older cached demos still replay
+      ...(count === 3 ? [] : [count]),
     ])
   );
 }
@@ -95,15 +114,16 @@ function writeCache(key: string, data: RecommendResponse) {
 export async function fetchRecommendations(
   repo: string,
   profile: DeveloperProfile,
-  labels: string[]
+  labels: string[],
+  count = 3
 ): Promise<RecommendResult> {
-  const key = cacheKey(repo, profile, labels);
+  const key = cacheKey(repo, profile, labels, count);
   let res: Response;
   try {
     res = await fetch(`${API_URL}/recommend`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ repo, profile, labels }),
+      body: JSON.stringify({ repo, profile, labels, count }),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
   } catch (e) {

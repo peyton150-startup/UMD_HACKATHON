@@ -5,6 +5,10 @@ import { RepoForm } from "./components/bounty/repo-form";
 import { QuestCard } from "./components/bounty/quest-card";
 import { PayoutPanel } from "./components/bounty/payout-panel";
 import { Ledger } from "./components/bounty/ledger";
+import { StarterGuide } from "./components/bounty/starter-guide";
+import { SavedQuests } from "./components/bounty/saved-quests";
+import { useQuestLibrary } from "./lib/hooks/use-quest-library";
+import { questKey, type SavedQuest } from "./lib/quest-library";
 import { LoadingScreen } from "./components/bounty/loading-screen";
 import {
   fetchRecommendations,
@@ -60,23 +64,27 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<RecommendResult | null>(null);
-  const [selected, setSelected] = useState<number | null>(null);
   const [lastContributor, setLastContributor] = useState("");
+  const { library, dispatch } = useQuestLibrary();
+  const accepted = library.saved.find(
+    (quest) => questKey(quest) === library.active
+  );
   const [searchedRepo, setSearchedRepo] = useState("");
   const walletParam = useWalletParam();
 
   async function handleSearch(
     repo: string,
     profile: DeveloperProfile,
-    labels: string[]
+    labels: string[],
+    count: number
   ) {
     setLoading(true);
     setSearchedRepo(repo);
     setError(null);
     setResult(null);
-    setSelected(null);
+    dispatch({ type: "drop" });
     try {
-      setResult(await fetchRecommendations(repo, profile, labels));
+      setResult(await fetchRecommendations(repo, profile, labels, count));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -84,8 +92,31 @@ export default function Home() {
     }
   }
 
-  const data = result?.data;
-  const quest = data?.recommendations.find((r) => r.issue.number === selected);
+  const data =
+    result?.data ??
+    (accepted
+      ? {
+          repo: accepted.repo,
+          provider: "saved result",
+          attempts: 1,
+          labels_used: [],
+          recommendations: [accepted.rec],
+          repo_context: accepted.context,
+        }
+      : undefined);
+  const quest =
+    accepted?.repo === data?.repo
+      ? data?.recommendations.find(
+          (r) => r.issue.number === accepted?.rec.issue.number
+        )
+      : undefined;
+
+  function resume(saved: SavedQuest) {
+    if (loading) return;
+    setResult(null);
+    setError(null);
+    dispatch({ type: "accept", quest: saved });
+  }
 
   return (
     <main className="mx-auto max-w-5xl px-4 pb-24 pt-6 sm:px-6">
@@ -118,10 +149,25 @@ export default function Home() {
         </div>
       </Level>
 
+      <SavedQuests
+        quests={library.saved}
+        active={library.active}
+        busy={loading}
+        onResume={resume}
+        onRemove={(key) => dispatch({ type: "remove", key })}
+      />
+
       <Level n={2} title="PICK A QUEST" locked={!data && !loading}>
         {loading && <LoadingScreen repo={searchedRepo} />}
         {!loading && data && (
           <>
+            {!result && accepted && (
+              <p className="mb-4 border-2 border-gold p-3 text-gold">
+                Restored saved quest from{" "}
+                {new Date(accepted.savedAt).toLocaleDateString()}. This is a
+                historical recommendation; the issue may have changed.
+              </p>
+            )}
             <p className="mb-4 text-muted">
               {data.recommendations.length} quests from{" "}
               <span className="text-foreground">{data.repo}</span> · model{" "}
@@ -131,14 +177,12 @@ export default function Home() {
                 {data.attempts}
               </span>
               {data.attempts > 1 &&
-                " (first answer cited an issue that doesn't exist and was rejected)"}
+                " (the first answer failed validation and was corrected)"}
               {" · "}
               {(data.labels_used ?? []).length > 0 ? (
                 <>labels: {data.labels_used.join(", ")}</>
               ) : (
-                <span className="text-gold">
-                  no labeled issues found, showing all open issues
-                </span>
+                <span className="text-gold">all open issues</span>
               )}
               {result?.replayed && (
                 <span className="ml-2 border-2 border-gold px-1 text-gold">
@@ -146,15 +190,68 @@ export default function Home() {
                 </span>
               )}
             </p>
+            <StarterGuide
+              repo={data.repo}
+              context={data.repo_context}
+              files={data.recommendations.flatMap(
+                (rec) => rec.files_to_look_at
+              )}
+            />
             <div className="grid gap-5">
               {data.recommendations.map((rec, i) => (
                 <QuestCard
-                  key={rec.issue.number}
+                  key={`${data.repo}#${rec.issue.number}`}
                   rec={rec}
                   rank={i + 1}
-                  selected={selected === rec.issue.number}
-                  onSelect={() => setSelected(rec.issue.number)}
-                  onDrop={() => setSelected(null)}
+                  selected={quest?.issue.number === rec.issue.number}
+                  onSelect={() =>
+                    dispatch({
+                      type: "accept",
+                      quest: {
+                        repo: data.repo,
+                        rec,
+                        context: data.repo_context,
+                        savedAt: new Date().toISOString(),
+                      },
+                    })
+                  }
+                  onDrop={() => dispatch({ type: "drop" })}
+                  saved={library.saved.some(
+                    (q) =>
+                      questKey(q) ===
+                      `${data.repo.toLowerCase()}#${rec.issue.number}`
+                  )}
+                  onSave={() => {
+                    const key = `${data.repo.toLowerCase()}#${rec.issue.number}`;
+                    dispatch(
+                      library.saved.some((q) => questKey(q) === key)
+                        ? { type: "remove", key }
+                        : {
+                            type: "save",
+                            quest: {
+                              repo: data.repo,
+                              rec,
+                              context: data.repo_context,
+                              savedAt: new Date().toISOString(),
+                            },
+                          }
+                    );
+                  }}
+                  completedSteps={
+                    library.progress[
+                      `${data.repo.toLowerCase()}#${rec.issue.number}`
+                    ] ?? []
+                  }
+                  onStep={(step, checked) =>
+                    dispatch({
+                      type: "step",
+                      key: `${data.repo.toLowerCase()}#${rec.issue.number}`,
+                      step,
+                      checked,
+                    })
+                  }
+                  repo={data.repo}
+                  context={data.repo_context}
                 />
               ))}
             </div>

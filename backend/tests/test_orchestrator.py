@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from agent.models import DeveloperProfile, Issue, RecommendRequest
+from agent.models import DeveloperProfile, Issue, RecommendRequest, RepoContext
 from agent.orchestrator import RecommendationError, recommend
 from services.github_service import parse_repo
 
@@ -14,6 +14,9 @@ REQ = RecommendRequest(repo="o/r", profile=DeveloperProfile(languages=["python"]
 
 
 class FakeGitHub:
+    def get_repo_context(self, repo, issues):
+        return RepoContext()
+
     def list_issues(self, repo, labels, limit=15):
         return ISSUES
 

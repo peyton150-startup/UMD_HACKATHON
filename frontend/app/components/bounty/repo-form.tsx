@@ -12,8 +12,17 @@ import {
 
 type Props = {
   loading: boolean;
-  onSubmit: (repo: string, profile: DeveloperProfile, labels: string[]) => void;
+  onSubmit: (
+    repo: string,
+    profile: DeveloperProfile,
+    labels: string[],
+    count: number
+  ) => void;
 };
+
+// how many quests the AI returns; the backend accepts 3-9
+const MIN_QUESTS = 3;
+const MAX_QUESTS = 9;
 
 const EXPERIENCE: Experience[] = ["beginner", "intermediate", "advanced"];
 
@@ -30,6 +39,7 @@ export function RepoForm({ loading, onSubmit }: Props) {
   const [languages, setLanguages] = useState("python");
   const [experience, setExperience] = useState<Experience>("beginner");
   const [hours, setHours] = useState(4);
+  const [questCount, setQuestCount] = useState(MIN_QUESTS);
   const [labels, setLabels] = useState(DEFAULT_LABELS.beginner);
 
   const [picks, setPicks] = useState<RepoSuggestion[] | null>(null);
@@ -77,7 +87,8 @@ export function RepoForm({ loading, onSubmit }: Props) {
           labels
             .split(",")
             .map((l) => l.trim())
-            .filter(Boolean)
+            .filter(Boolean),
+          questCount
         );
       }}
     >
@@ -205,17 +216,35 @@ export function RepoForm({ loading, onSubmit }: Props) {
           ))}
         </div>
       </fieldset>
-      <label>
-        <span className="text-muted">Hours available: {hours}</span>
-        <input
-          type="range"
-          min={1}
-          max={20}
-          value={hours}
-          onChange={(e) => setHours(Number(e.target.value))}
-          className="mt-3 w-full accent-[var(--gold)]"
-        />
-      </label>
+      <div className="grid gap-4">
+        <label>
+          <span className="text-muted">Hours available: {hours}</span>
+          <input
+            type="range"
+            min={1}
+            max={20}
+            value={hours}
+            onChange={(e) => setHours(Number(e.target.value))}
+            className="mt-3 w-full accent-[var(--gold)]"
+          />
+        </label>
+        <label>
+          <span className="text-muted">Quests to find: {questCount}</span>
+          <input
+            type="range"
+            min={MIN_QUESTS}
+            max={MAX_QUESTS}
+            value={questCount}
+            onChange={(e) => setQuestCount(Number(e.target.value))}
+            className="mt-3 w-full accent-[var(--gold)]"
+          />
+          {questCount > 5 && (
+            <span className="mt-1 block text-muted">
+              More quests take the AI longer to pick.
+            </span>
+          )}
+        </label>
+      </div>
       <div className="sm:col-span-2">
         <button
           type="submit"
